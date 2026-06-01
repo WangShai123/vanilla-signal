@@ -13,7 +13,7 @@
 ## 打包结果
 
 - `signal.mjs`：ES Module，适合现代浏览器和构建工具。
-- `signal.umd.js`：UMD 模块，适合直接在浏览器中通过 `<script>` 引入。
+- `signal.umd.js`：UMD 模块，适合直接在浏览器中通过 `<script>` 引入。GlobalName: `signal`。
 
 ## 使用文档
 
