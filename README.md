@@ -10,6 +10,11 @@
 - 支持 JSX 使用体验：无构建环境使用 `` jsx `...` `` 模板；有构建环境可接入 JSX runtime。
 - 可维护：业务代码以 state、memo、effect、DOM binding 分层组织。
 
+## 打包结果
+
+- `signal.mjs`：ES Module，适合现代浏览器和构建工具。
+- `signal.umd.js`：UMD 模块，适合直接在浏览器中通过 `<script>` 引入。
+
 ## 使用文档
 
 [使用文档](./docs/signal.md)
@@ -48,7 +53,7 @@ dispose();
 ```js
 const state = createDeepStore({
   rows: [],
-  filter: "",
+  filter: '',
 });
 
 const visibleRows = createMemo(() => {
@@ -68,7 +73,7 @@ render(
     })}
   </section>
 `,
-  document.getElementById("app"),
+  document.getElementById('app')
 );
 ```
 

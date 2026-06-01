@@ -10,6 +10,11 @@
 - 支持 JSX 使用体验：无构建环境使用 `` jsx `...` `` 模板；有构建环境可接入 JSX runtime。
 - 可维护：业务代码以 state、memo、effect、DOM binding 分层组织。
 
+## 打包结果
+
+- `signal.mjs`：ES Module，适合现代浏览器和构建工具。
+- `signal.umd.js`：UMD 模块，适合直接在浏览器中通过 `<script>` 引入。
+
 ## 基本概念
 
 ### Accessor
@@ -44,7 +49,7 @@ dispose();
 ```js
 const state = createDeepStore({
   rows: [],
-  filter: "",
+  filter: '',
 });
 
 const visibleRows = createMemo(() => {
@@ -64,7 +69,7 @@ render(
     })}
   </section>
 `,
-  document.getElementById("app"),
+  document.getElementById('app')
 );
 ```
 
@@ -96,7 +101,7 @@ const [read, write] = createSignal(initial, options?)
 const [count, setCount] = createSignal(0);
 
 createEffect(() => {
-  console.log("count:", count());
+  console.log('count:', count());
 });
 
 setCount(1);
@@ -139,7 +144,7 @@ effect.dispose()
 当 effect 内读取的依赖变化时，effect 会重新运行。
 
 ```js
-const [name, setName] = createSignal("JUI");
+const [name, setName] = createSignal('JUI');
 
 createEffect(() => {
   document.title = `Hello ${name()}`;
@@ -151,7 +156,7 @@ createEffect(() => {
 ```js
 createEffect(() => {
   const id = setInterval(() => {
-    console.log("tick");
+    console.log('tick');
   }, 1000);
 
   onCleanup(() => clearInterval(id));
@@ -202,7 +207,7 @@ console.log(total()); // 200
 自定义相等判断：
 
 ```js
-const userName = createMemo(() => user().name.trim(), "", {
+const userName = createMemo(() => user().name.trim(), '', {
   equals: (a, b) => a.toLowerCase() === b.toLowerCase(),
 });
 ```
@@ -227,14 +232,14 @@ createWatch(source, callback, options?)
 监听一个或多个 source 的变化，适合执行“变化后动作”。
 
 ```js
-const [keyword, setKeyword] = createSignal("");
+const [keyword, setKeyword] = createSignal('');
 
 createWatch(
   keyword,
   (next, prev) => {
-    console.log("keyword changed:", prev, "=>", next);
+    console.log('keyword changed:', prev, '=>', next);
   },
-  { defer: true },
+  { defer: true }
 );
 ```
 
@@ -246,7 +251,7 @@ createWatch(
   ([nextPage, nextSize], previous) => {
     loadList(nextPage, nextSize);
   },
-  { defer: true },
+  { defer: true }
 );
 ```
 
@@ -264,11 +269,11 @@ const isSelected = createSelector(selectedId);
 用于列表选中态判断：
 
 ```js
-const [selectedId, setSelectedId] = createSignal("a");
+const [selectedId, setSelectedId] = createSignal('a');
 const isSelected = createSelector(selectedId);
 
 jsx`
-  <button class=${() => (isSelected("a") ? "active" : "")}>A</button>
+  <button class=${() => (isSelected('a') ? 'active' : '')}>A</button>
 `;
 ```
 
@@ -282,7 +287,7 @@ access(value);
 
 ```js
 function toText(value) {
-  return String(access(value) ?? "");
+  return String(access(value) ?? '');
 }
 ```
 
@@ -385,8 +390,8 @@ scope.run(() => {});
 ```js
 createEffect(() => {
   const handler = () => {};
-  window.addEventListener("resize", handler);
-  onCleanup(() => window.removeEventListener("resize", handler));
+  window.addEventListener('resize', handler);
+  onCleanup(() => window.removeEventListener('resize', handler));
 });
 ```
 
@@ -397,7 +402,7 @@ createEffect(() => {
 ```js
 createRoot(() => {
   onMount(() => {
-    console.log("mounted in microtask");
+    console.log('mounted in microtask');
   });
 });
 ```
@@ -419,7 +424,7 @@ const owner = getOwner();
 ```js
 const boundary = createErrorBoundary(() => {
   createEffect(() => {
-    if (count() > 5) throw new Error("Too large");
+    if (count() > 5) throw new Error('Too large');
   });
 });
 
@@ -447,7 +452,7 @@ createEffect(() => {
 ```js
 const result = catchError(
   () => JSON.parse(text),
-  (error) => ({ error: error.message }),
+  (error) => ({ error: error.message })
 );
 ```
 
@@ -459,15 +464,15 @@ const result = catchError(
 
 ```js
 const user = createStore({
-  name: "Alice",
-  profile: { city: "Beijing" },
+  name: 'Alice',
+  profile: { city: 'Beijing' },
 });
 
 createEffect(() => {
   console.log(user.name);
 });
 
-user.name = "Bob";
+user.name = 'Bob';
 ```
 
 `createStore` 是浅层响应式：
@@ -486,7 +491,7 @@ user.name = "Bob";
 const state = createDeepStore({
   user: {
     profile: {
-      city: "Beijing",
+      city: 'Beijing',
     },
   },
 });
@@ -495,7 +500,7 @@ createEffect(() => {
   console.log(state.user.profile.city);
 });
 
-state.user.profile.city = "Shanghai";
+state.user.profile.city = 'Shanghai';
 ```
 
 `createDeepStore` 会递归代理普通对象和数组，适合复杂 UI 状态。
@@ -505,8 +510,8 @@ state.user.profile.city = "Shanghai";
 ```js
 const skuState = createDeepStore({
   rows: [
-    { id: "black-s", color: "Black", size: "S", stock: 12, price: 89 },
-    { id: "black-m", color: "Black", size: "M", stock: 4, price: 89 },
+    { id: 'black-s', color: 'Black', size: 'S', stock: 12, price: 89 },
+    { id: 'black-m', color: 'Black', size: 'M', stock: 4, price: 89 },
   ],
 });
 
@@ -519,11 +524,17 @@ const lowStockCount = createMemo(() => {
 });
 
 createEffect(() => {
-  console.log("total:", totalStock(), "low:", lowStockCount());
+  console.log('total:', totalStock(), 'low:', lowStockCount());
 });
 
 skuState.rows[1].stock = 8;
-skuState.rows.push({ id: "green-l", color: "Green", size: "L", stock: 2, price: 129 });
+skuState.rows.push({
+  id: 'green-l',
+  color: 'Green',
+  size: 'L',
+  stock: 2,
+  price: 129,
+});
 skuState.rows.sort((a, b) => a.stock - b.stock);
 ```
 
@@ -556,8 +567,8 @@ const readonlyState = createReadonly(state);
 
 ```js
 produce(state, (draft) => {
-  draft.user.name = "Bob";
-  draft.rows.push({ id: "new", stock: 1 });
+  draft.user.name = 'Bob';
+  draft.rows.push({ id: 'new', stock: 1 });
 });
 ```
 
@@ -591,10 +602,13 @@ const [data, controls] = createResource(fetcher, options?)
 ```js
 const [id, setId] = createSignal(1);
 
-const [data, { state, reload, refetch, mutate }] = createResource(id, async (id) => {
-  const response = await fetch(`/api/item/${id}`);
-  return response.json();
-});
+const [data, { state, reload, refetch, mutate }] = createResource(
+  id,
+  async (id) => {
+    const response = await fetch(`/api/item/${id}`);
+    return response.json();
+  }
+);
 ```
 
 `state` 字段：
@@ -629,7 +643,7 @@ createResource(fetcher, {
 
 ```js
 const [user, { state, reload }] = createResource(async () => {
-  const response = await fetch("/api/user");
+  const response = await fetch('/api/user');
   return response.json();
 });
 
@@ -644,7 +658,7 @@ render(
           : jsx`<div>${() => user()?.name}</div>`}
   </section>
 `,
-  app,
+  app
 );
 ```
 
@@ -656,9 +670,12 @@ render(
 const query = createQuery({
   queryKey: () => state.keyword,
   queryFn: async ({ queryKey, signal, attempt }) => {
-    const response = await fetch(`/api/search?q=${encodeURIComponent(queryKey)}`, {
-      signal,
-    });
+    const response = await fetch(
+      `/api/search?q=${encodeURIComponent(queryKey)}`,
+      {
+        signal,
+      }
+    );
     return response.json();
   },
   retry: 2,
@@ -694,8 +711,8 @@ query.promise();
 const products = createQuery({
   retry: 0,
   queryFn: async () => {
-    const response = await fetch("/api/products");
-    if (!response.ok) throw new Error("Request failed");
+    const response = await fetch('/api/products');
+    if (!response.ok) throw new Error('Request failed');
     return response.json();
   },
 });
@@ -709,7 +726,7 @@ render(
         : products.state.isError
           ? jsx`
           <div class="error">
-            ${() => products.state.error?.message || "请求失败"}
+            ${() => products.state.error?.message || '请求失败'}
             <button onClick=${() => products.retry()}>重试</button>
           </div>
         `
@@ -724,7 +741,7 @@ render(
         `}
   </section>
 `,
-  app,
+  app
 );
 ```
 
@@ -759,7 +776,7 @@ const dispose = render(
   () => jsx`
   <button>${() => count()}</button>
 `,
-  document.getElementById("app"),
+  document.getElementById('app')
 );
 
 dispose();
@@ -787,8 +804,8 @@ bindText(el, () => `Hello ${name()}`);
 ### bindAttr
 
 ```js
-bindAttr(input, "disabled", () => loading());
-bindAttr(link, "href", () => state.url);
+bindAttr(input, 'disabled', () => loading());
+bindAttr(link, 'href', () => state.url);
 ```
 
 `null`, `undefined`, `false` 会移除属性；`true` 会设置空属性。
@@ -796,18 +813,18 @@ bindAttr(link, "href", () => state.url);
 ### bindStyle
 
 ```js
-bindStyle(el, "width", () => `${progress()}%`);
+bindStyle(el, 'width', () => `${progress()}%`);
 
 bindStyle(el, () => ({
-  color: state.danger ? "red" : "green",
-  display: state.visible ? "" : "none",
+  color: state.danger ? 'red' : 'green',
+  display: state.visible ? '' : 'none',
 }));
 ```
 
 ### bindClass
 
 ```js
-bindClass(el, "is-active", () => selected());
+bindClass(el, 'is-active', () => selected());
 ```
 
 ### bindShow
@@ -821,13 +838,13 @@ bindShow(panel, () => state.open);
 ### bindIf
 
 ```js
-const anchor = document.createComment("if");
+const anchor = document.createComment('if');
 container.append(anchor);
 
 bindIf(
   anchor,
   () => state.open,
-  () => jsx`<div>Panel</div>`,
+  () => jsx`<div>Panel</div>`
 );
 ```
 
@@ -836,7 +853,7 @@ bindIf(
 ### bindList
 
 ```js
-const anchor = document.createComment("rows");
+const anchor = document.createComment('rows');
 tbody.append(anchor);
 
 bindList(
@@ -851,7 +868,7 @@ bindList(
   {
     key: (row) => row.id,
     fallback: jsx`<tr><td>暂无数据</td></tr>`,
-  },
+  }
 );
 ```
 
@@ -873,11 +890,11 @@ bindList(
 
 ```js
 bindList(anchor, rows, render, {
-  key: createListKey("id"),
+  key: createListKey('id'),
 });
 
 bindList(anchor, rows, render, {
-  key: createCompositeKey("color", "size"),
+  key: createCompositeKey('color', 'size'),
 });
 ```
 
@@ -893,13 +910,13 @@ const [count, setCount] = createSignal(0);
 render(
   () => jsx`
   <button
-    class=${() => (count() > 5 ? "is-hot" : "")}
+    class=${() => (count() > 5 ? 'is-hot' : '')}
     onClick=${() => setCount((value) => value + 1)}
   >
     ${() => `count: ${count()}`}
   </button>
 `,
-  app,
+  app
 );
 ```
 
@@ -934,7 +951,7 @@ jsx`
 编译后等价于：
 
 ```js
-jsx("div", { children: "test" });
+jsx('div', { children: 'test' });
 ```
 
 注意：
@@ -948,12 +965,12 @@ jsx("div", { children: "test" });
 
 ```js
 const node = h(
-  "button",
+  'button',
   {
     onClick: () => setCount(count() + 1),
-    class: () => (count() > 0 ? "active" : ""),
+    class: () => (count() > 0 ? 'active' : ''),
   },
-  () => count(),
+  () => count()
 );
 ```
 
@@ -978,7 +995,7 @@ insert(
     when: () => state.visible,
     fallback: jsx`<span>隐藏</span>`,
     children: jsx`<strong>显示</strong>`,
-  }),
+  })
 );
 ```
 
@@ -1006,7 +1023,7 @@ insert(
       ${() => item().name}
     </div>
   `,
-  }),
+  })
 );
 ```
 
@@ -1023,17 +1040,17 @@ insert(
 简单字符串数组：
 
 ```js
-const [items, setItems] = createSignal(["one", "two"]);
+const [items, setItems] = createSignal(['one', 'two']);
 
 insert(
   container,
   For({
     each: items,
     children: (item) => jsx`<span>${item}</span>`,
-  }),
+  })
 );
 
-setItems(["two", "three"]);
+setItems(['two', 'three']);
 ```
 
 上例中 `${item}` 会被 `jsx` 当 accessor 处理。
@@ -1058,7 +1075,7 @@ For({
 function mountModalContent(container) {
   return render(() => {
     const form = createDeepStore({
-      name: "",
+      name: '',
       count: 1,
     });
 
@@ -1100,11 +1117,12 @@ render(
     ${For({
       each: () => toasts,
       key: (toast) => toast.id,
-      children: (toast) => jsx`<div class="toast">${() => toast().message}</div>`,
+      children: (toast) =>
+        jsx`<div class="toast">${() => toast().message}</div>`,
     })}
   </div>
 `,
-  app,
+  app
 );
 ```
 
@@ -1113,8 +1131,8 @@ render(
 ```js
 const state = createDeepStore({
   rows: [
-    { id: "black-s", name: "Tee", size: "S", stock: 12, price: 89 },
-    { id: "black-m", name: "Tee", size: "M", stock: 4, price: 89 },
+    { id: 'black-s', name: 'Tee', size: 'S', stock: 12, price: 89 },
+    { id: 'black-m', name: 'Tee', size: 'M', stock: 4, price: 89 },
   ],
 });
 
@@ -1136,11 +1154,13 @@ render(
               <td>${() => row().name}</td>
               <td>${() => row().size}</td>
               <td>
-                <input type="number" value=${() => row().stock} onInput=${(e) => {
+                <input type="number" value=${() => row().stock} onInput=${(
+                  e
+                ) => {
                   row().stock = Number(e.currentTarget.value);
                 }}>
               </td>
-              <td>${() => (row().stock < 5 ? "低库存" : "正常")}</td>
+              <td>${() => (row().stock < 5 ? '低库存' : '正常')}</td>
             </tr>
           `,
         })}
@@ -1148,7 +1168,7 @@ render(
     </table>
   </section>
 `,
-  app,
+  app
 );
 ```
 
@@ -1156,14 +1176,16 @@ render(
 
 ```js
 const state = createDeepStore({
-  keyword: "",
+  keyword: '',
 });
 
 const result = createQuery({
   queryKey: () => state.keyword,
   enabled: () => state.keyword.trim().length > 0,
   queryFn: async ({ queryKey }) => {
-    const response = await fetch(`/api/search?q=${encodeURIComponent(queryKey)}`);
+    const response = await fetch(
+      `/api/search?q=${encodeURIComponent(queryKey)}`
+    );
     return response.json();
   },
 });
@@ -1187,7 +1209,7 @@ render(
             })}
   </section>
 `,
-  app,
+  app
 );
 ```
 

@@ -29,6 +29,10 @@
     "tests"
   ],
   "type": "module",
+  "main": "./dist/signal.mjs",
+  "module": "./dist/signal.mjs",
+  "browser": "./dist/signal.umd.js",
+  "unpkg": "./dist/signal.umd.js",
   "exports": {
     ".": "./dist/signal.mjs",
     "./package.json": "./package.json"
