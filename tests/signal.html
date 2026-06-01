@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JUI Signal Runtime Test</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f4f6f8;
+        --panel: #ffffff;
+        --text: #1f2937;
+        --muted: #667085;
+        --line: #d8dee6;
+        --accent: #2563eb;
+        --accent-dark: #1d4ed8;
+        --ok: #14804a;
+        --bad: #b42318;
+        --warn: #b54708;
+        --chip: #eef2f7;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--bg);
+        color: var(--text);
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        font-size: 14px;
+      }
+
+      button,
+      input,
+      select {
+        font: inherit;
+      }
+
+      button {
+        min-height: 34px;
+        border: 1px solid var(--accent);
+        border-radius: 6px;
+        background: var(--accent);
+        color: #fff;
+        padding: 0 12px;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background: var(--accent-dark);
+      }
+
+      button.secondary {
+        background: #fff;
+        color: var(--accent);
+      }
+
+      button.secondary:hover {
+        background: #eef4ff;
+      }
+
+      input,
+      select {
+        min-height: 34px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #fff;
+        color: var(--text);
+        padding: 0 10px;
+      }
+
+      .page {
+        width: min(1420px, calc(100vw - 32px));
+        margin: 0 auto;
+        padding: 24px 0 36px;
+      }
+
+      .topbar {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 18px;
+      }
+
+      h1 {
+        margin: 0 0 6px;
+        font-size: 26px;
+        line-height: 1.2;
+        letter-spacing: 0;
+      }
+
+      .summary {
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(120px, 1fr));
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .stat {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        padding: 12px;
+      }
+
+      .stat strong {
+        display: block;
+        font-size: 24px;
+        line-height: 1.2;
+        margin-bottom: 2px;
+      }
+
+      .stat span {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1.1fr) minmax(420px, 0.9fr);
+        gap: 16px;
+        align-items: start;
+      }
+
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        overflow: hidden;
+      }
+
+      .panel-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        border-bottom: 1px solid var(--line);
+        padding: 12px 14px;
+      }
+
+      .panel-head h2 {
+        margin: 0;
+        font-size: 15px;
+        line-height: 1.2;
+      }
+
+      .panel-body {
+        padding: 14px;
+      }
+
+      .test-list {
+        display: grid;
+        gap: 8px;
+      }
+
+      .test-row {
+        display: grid;
+        grid-template-columns: 92px minmax(0, 1fr) auto;
+        gap: 10px;
+        align-items: center;
+        min-height: 42px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 8px 10px;
+        background: #fff;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 76px;
+        min-height: 24px;
+        border-radius: 999px;
+        background: var(--chip);
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .badge.pass {
+        background: #e7f6ec;
+        color: var(--ok);
+      }
+
+      .badge.fail {
+        background: #fef3f2;
+        color: var(--bad);
+      }
+
+      .badge.running {
+        background: #eff6ff;
+        color: var(--accent);
+      }
+
+      .test-name {
+        min-width: 0;
+        font-weight: 650;
+        overflow-wrap: anywhere;
+      }
+
+      .test-detail {
+        margin-top: 3px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+      }
+
+      .demo-grid {
+        display: grid;
+        gap: 14px;
+      }
+
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+
+      .sku-table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      .sku-table th,
+      .sku-table td {
+        border-bottom: 1px solid var(--line);
+        padding: 8px;
+        text-align: left;
+        vertical-align: middle;
+      }
+
+      .sku-table th {
+        background: #f8fafc;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .sku-table tr:last-child td {
+        border-bottom: 0;
+      }
+
+      .sku-table input {
+        width: 100%;
+      }
+
+      .sku-name {
+        font-weight: 650;
+        overflow-wrap: anywhere;
+      }
+
+      .sku-sub {
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .low {
+        color: var(--bad);
+        font-weight: 700;
+      }
+
+      .ok {
+        color: var(--ok);
+        font-weight: 700;
+      }
+
+      .preview {
+        display: grid;
+        gap: 10px;
+        min-height: 120px;
+        border: 1px dashed var(--line);
+        border-radius: 8px;
+        padding: 12px;
+        background: #fbfcfe;
+      }
+
+      .preview h3 {
+        margin: 0;
+        font-size: 16px;
+      }
+
+      .preview-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        min-height: 28px;
+        border-radius: 999px;
+        background: var(--chip);
+        padding: 0 10px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 650;
+      }
+
+      .log {
+        height: 210px;
+        overflow: auto;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #0f172a;
+        color: #dbeafe;
+        padding: 10px;
+        font-family:
+          ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          "Liberation Mono", monospace;
+        font-size: 12px;
+        line-height: 1.5;
+        white-space: pre-wrap;
+      }
+
+      .notice {
+        border-left: 3px solid var(--warn);
+        background: #fffbeb;
+        color: #713f12;
+        padding: 10px 12px;
+        line-height: 1.5;
+        border-radius: 0 6px 6px 0;
+      }
+
+      @media (max-width: 980px) {
+        .topbar,
+        .layout {
+          grid-template-columns: 1fr;
+        }
+
+        .actions {
+          justify-content: flex-start;
+        }
+
+        .stats {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .test-row {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <main class="page">
+      <section class="topbar">
+        <div>
+          <h1>JUI Signal Runtime Test</h1>
+          <div class="summary">
+            覆盖 fine-grained reactivity、深层数组/store、DOM 绑定、keyed list
+            和 JSX runtime factory。
+          </div>
+        </div>
+        <div class="actions">
+          <button id="run-all">运行全部测试</button>
+          <button id="reset-demo" class="secondary">重置演示数据</button>
+        </div>
+      </section>
+
+      <section class="stats">
+        <div class="stat">
+          <strong id="stat-total">0</strong><span>总测试</span>
+        </div>
+        <div class="stat">
+          <strong id="stat-pass">0</strong><span>通过</span>
+        </div>
+        <div class="stat">
+          <strong id="stat-fail">0</strong><span>失败</span>
+        </div>
+        <div class="stat">
+          <strong id="stat-pending">0</strong><span>待运行</span>
+        </div>
+      </section>
+
+      <section class="layout">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>自动化断言</h2>
+            <span id="run-state" class="badge">IDLE</span>
+          </div>
+          <div class="panel-body">
+            <div id="test-list" class="test-list"></div>
+          </div>
+        </div>
+
+        <div class="demo-grid">
+          <div class="panel">
+            <div class="panel-head">
+              <h2>SKU 库存表交互</h2>
+              <span id="sku-total" class="chip">总库存 0</span>
+            </div>
+            <div class="panel-body">
+              <div class="toolbar">
+                <button id="add-sku">新增 SKU</button>
+                <button id="sort-stock" class="secondary">按库存排序</button>
+                <button id="discount" class="secondary">价格 -5</button>
+              </div>
+              <div id="sku-table"></div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <h2>JSX Runtime Factory</h2>
+              <span id="jsx-count" class="chip">count 0</span>
+            </div>
+            <div class="panel-body">
+              <div id="jsx-demo" class="preview"></div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <h2>Query Loading / Retry</h2>
+              <span id="query-state" class="chip">idle</span>
+            </div>
+            <div class="panel-body">
+              <div id="query-demo" class="preview"></div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <h2>运行日志</h2>
+              <button id="clear-log" class="secondary">清空</button>
+            </div>
+            <div class="panel-body">
+              <div class="notice">
+                浏览器不能原生解析 JSX 语法。本测试页不依赖构建，使用 signal.js
+                导出的 h/jsx/jsxs runtime 验证 JSX 变换后的运行能力。
+              </div>
+              <div id="log" class="log" style="margin-top: 12px"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="./signal.js"></script>
+  </body>
+</html>

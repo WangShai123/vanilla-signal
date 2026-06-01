@@ -1,0 +1,48 @@
+{
+  "name": "vanilla-signal",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Signal runtime: A simple and efficient vanilla javascript library.",
+  "keywords": [
+    "reactivity",
+    "runtime",
+    "signal",
+    "state management",
+    "vanilla"
+  ],
+  "homepage": "https://github.com/WangShai123/vanilla-signal",
+  "bugs": {
+    "url": "https://github.com/WangShai123/vanilla-signal/issues"
+  },
+  "license": "MIT",
+  "author": "Wang Shai <hiwangshai@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WangShai123/vanilla-signal.git"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "exports": {
+    ".": "./dist/signal.mjs",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "vp pack",
+    "dev": "vp pack --watch",
+    "test": "vp test",
+    "check": "vp check",
+    "prepublishOnly": "vp run build"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.2",
+    "@typescript/native-preview": "7.0.0-dev.20260509.2",
+    "bumpp": "^11.1.0",
+    "typescript": "^6.0.3",
+    "vite-plus": "^0.1.20"
+  }
+}
