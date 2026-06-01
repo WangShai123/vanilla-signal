@@ -1,9 +1,11 @@
 {
   "name": "vanilla-signal",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": false,
   "description": "Signal runtime: A simple and efficient vanilla javascript library.",
   "keywords": [
+    "jsx",
+    "jsxs",
     "reactivity",
     "runtime",
     "signal",
