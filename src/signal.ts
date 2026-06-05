@@ -1,6 +1,6 @@
 /* ======================================================
- * signal.js
- * A Solid-inspired reactive runtime for browser-first UI.
+ * signal.ts
+ * A typed Solid-inspired reactive runtime for browser-first UI.
  *
  * Goals:
  * - No runtime dependency and usable directly as an ES module in browsers.
@@ -9,8 +9,101 @@
  * - DOM helpers plus JSX factory/runtime exports for transformed JSX.
  * ====================================================== */
 
+// TypeScript 类型定义：运行时代码保持与 signal.js 同构，类型用于约束公开 API 与内部调度节点。
+type AnyFn = (...args: any[]) => any;
+type Equality<T = any> = (previous: T, next: T) => boolean;
+export type Accessor<T = any> = (() => T) & {
+  peek?: () => T;
+  toJSON?: () => T;
+  dispose?: () => void;
+  loading?: () => boolean;
+  error?: () => any;
+  latest?: () => any;
+  state?: any;
+  refetch?: (options?: any) => Promise<any>;
+  retry?: () => Promise<any>;
+  promise?: () => Promise<any> | null;
+};
+export type Setter<T = any> = (next: T | ((previous: T) => T)) => T;
+export type SignalTuple<T = any> = [Accessor<T>, Setter<T>];
+export type MaybeAccessor<T = any> = T | (() => T);
+export interface SignalOptions<T = any> {
+  equals?: false | Equality<T>;
+}
+export interface EffectOptions {
+  defer?: boolean;
+  priority?: number;
+}
+export interface MemoOptions<T = any> extends SignalOptions<T> {
+  defer?: boolean;
+}
+interface DevtoolsHook {
+  emit?: (type: string, payload: any) => void;
+}
+interface OwnerNode {
+  type: string;
+  parent?: OwnerNode | null;
+  owner?: OwnerNode | null;
+  owned: any[];
+  cleanups: Array<() => void>;
+  disposed: boolean;
+  errorHandler: ((error: any) => void) | null;
+  [key: string]: any;
+}
+interface ReactiveSource {
+  observers?: Set<Computation> | null;
+  equals?: Equality<any>;
+}
+interface Computation extends OwnerNode {
+  id: number;
+  fn: (value: any) => any;
+  owner: OwnerNode | null;
+  sources: Set<ReactiveSource>;
+  observers: Set<Computation> | null;
+  queued: boolean;
+  running: boolean;
+  state: number;
+  initialized: boolean;
+  value: any;
+  priority: number;
+  equals: Equality<any>;
+  dispose: () => void;
+}
+interface ComputationOptions {
+  type?: string;
+  value?: any;
+  priority?: number;
+  equals?: Equality<any>;
+}
+interface StoreMeta {
+  deps: Map<PropertyKey, SignalTuple<number>>;
+}
+interface ResourceAccessor<T = any> extends Accessor<T | undefined> {
+  loading: () => boolean;
+  error: () => any;
+  latest: () => T | undefined;
+}
+interface ResourceControls<T = any> {
+  state: any;
+  mutate: (value: T | ((previous: T | undefined) => T)) => void;
+  reload: (value?: any) => Promise<T>;
+  refetch: (value?: any) => Promise<T>;
+}
+interface QueryAccessor<T = any> extends Accessor<T | undefined> {
+  state: any;
+  refetch: (options?: any) => Promise<T | undefined>;
+  retry: () => Promise<T | undefined>;
+  promise: () => Promise<T | undefined> | null;
+}
+
+declare global {
+  interface Window {
+    __SIGNAL_DEVTOOLS__?: DevtoolsHook;
+  }
+}
+
 // 开发工具钩子：如果在全局 window 对象上存在 __SIGNAL_DEVTOOLS__，则引用它，否则为 null
-const DEVTOOLS =
+const DEVTOOLS: DevtoolsHook | null =
   typeof window !== 'undefined' ? window.__SIGNAL_DEVTOOLS__ || null : null;
 
 // 计算节点的状态常量：0 表示清洁（无待处理更新）
@@ -28,26 +121,26 @@ const RAW = Symbol('signal.raw');
 const IS_STORE = Symbol('signal.store');
 
 // 当前正在执行的监听者（Listener），用于在读取信号时建立依赖关系
-let Listener = null;
+let Listener: Computation | null = null;
 // 当前所有者的上下文（Owner），用于管理副作用、清理函数和错误边界的作用域
-let Owner = null;
+let Owner: OwnerNode | null = null;
 // 批量更新的嵌套深度，大于 0 时表示处于批量更新模式中，暂停立即刷新效应
-let batchDepth = 0;
+let batchDepth: number = 0;
 // 过渡（Transition）更新的嵌套深度，用于处理低优先级的状态更新
-let transitionDepth = 0;
+let transitionDepth: number = 0;
 // 标记是否正在刷新副作用队列，防止重入导致无限循环
-let flushing = false;
+let flushing: boolean = false;
 // 标记普通副作用队列是否已安排等待刷新
-let effectFlushPending = false;
+let effectFlushPending: boolean = false;
 // 标记过渡副作用队列是否已安排等待刷新
-let transitionFlushPending = false;
+let transitionFlushPending: boolean = false;
 // 全局计算节点 ID 计数器，用于唯一标识每个副作用或记忆值
-let computationId = 0;
+let computationId: number = 0;
 
 // 待执行的普通副作用（Effect）队列，存储需要立即或高优先级更新的计算节点
-const EFFECT_QUEUE = new Set();
+const EFFECT_QUEUE = new Set<Computation>();
 // 待执行的过渡（Transition）副作用队列，存储低优先级、可延迟更新的计算节点
-const TRANSITION_QUEUE = new Set();
+const TRANSITION_QUEUE = new Set<Computation>();
 // 一个已解析的 Promise 实例，用于在不支持 queueMicrotask 的环境中模拟微任务调度
 const resolvedPromise = Promise.resolve();
 
@@ -58,7 +151,7 @@ const resolvedPromise = Promise.resolve();
  * @param {object} payload - 事件携带的数据负载。
  * @returns {void}
  */
-function emit(type, payload) {
+function emit(type: string, payload: any): void {
   DEVTOOLS?.emit?.(type, payload);
 }
 
@@ -69,7 +162,7 @@ function emit(type, payload) {
  * @param {Function} fn - 需要异步执行的回调函数。
  * @returns {void}
  */
-function queueTask(fn) {
+function queueTask(fn: () => void): void {
   // 检查浏览器是否支持原生的 queueMicrotask API
   if (typeof queueMicrotask === 'function') {
     queueMicrotask(fn);
@@ -89,7 +182,7 @@ function queueTask(fn) {
  * @param {*} value - 需要检查的值。
  * @returns {boolean} 如果值是对象且不为 null，则返回 true；否则返回 false。
  */
-function isObject(value) {
+function isObject(value: unknown): value is object {
   return value !== null && typeof value === 'object';
 }
 
@@ -103,7 +196,7 @@ function isObject(value) {
  * @param {*} value - 需要检查的值
  * @returns {boolean} 如果值是可包装的则返回 true，否则返回 false
  */
-function isWrappable(value) {
+function isWrappable(value: unknown): value is Record<PropertyKey, any> | any[] {
   // 非对象类型直接返回 false
   if (!isObject(value)) return false;
 
@@ -121,7 +214,7 @@ function isWrappable(value) {
  * @param {*} value - 需要检查的任意类型值。
  * @returns {boolean} 如果值是函数类型则返回 true，否则返回 false。
  */
-function isAccessor(value) {
+function isAccessor<T = any>(value: unknown): value is () => T {
   return typeof value === 'function';
 }
 
@@ -131,7 +224,7 @@ function isAccessor(value) {
  * @param {*} value - 需要访问的值，可能是一个普通值或一个无参的访问器函数。
  * @returns {*} 如果 value 是访问器函数，则返回其执行结果；否则返回 value 本身。
  */
-export function access(value) {
+export function access<T = any>(value: MaybeAccessor<T>): T {
   return isAccessor(value) ? value() : value;
 }
 
@@ -140,7 +233,7 @@ export function access(value) {
  *
  * @returns {Object} 返回全局或模块作用域中的 Owner 变量。
  */
-export function getOwner() {
+export function getOwner(): OwnerNode | null {
   return Owner;
 }
 
@@ -151,7 +244,7 @@ export function getOwner() {
  * @param {string} [type='owner'] - 所有者的类型标识，默认为 'owner'。
  * @returns {Object} 新创建的所有者对象，包含类型、父引用、子所有者列表、清理函数列表、处置状态和错误处理器。
  */
-function createOwner(parent, type = 'owner') {
+function createOwner(parent: OwnerNode | null, type = 'owner'): OwnerNode {
   // 初始化所有者对象，包含基本属性和状态
   const owner = {
     type,
@@ -183,14 +276,17 @@ function createOwner(parent, type = 'owner') {
  * @param {Function} fn - 要在 owner 上下文中执行的无参函数。
  * @returns {*} 返回 fn 的执行结果；若 owner 已处置或错误被 handleError 吞没，则返回 undefined。
  */
-function runWithOwner(owner, fn) {
+function runWithOwner<T = any>(
+  owner: OwnerNode | null | undefined,
+  fn: () => T
+): T | undefined {
   // 如果所有者已被处置，则直接返回 undefined，避免在无效上下文中执行
   if (owner?.disposed) return undefined;
 
   // 保存当前的全局 Owner，以便后续恢复
   const prevOwner = Owner;
   // 将全局 Owner 临时切换为传入的 owner
-  Owner = owner;
+  Owner = owner || null;
   try {
     // 在指定的 owner 上下文中执行函数
     return fn();
@@ -214,7 +310,7 @@ function runWithOwner(owner, fn) {
  * @param {Object} owner - 拥有清理函数列表的对象，必须包含 cleanups 属性（数组）。
  * @returns {void}
  */
-function runCleanups(owner) {
+function runCleanups(owner: OwnerNode): void {
   // 原子性地取出所有待执行的清理函数，清空原数组
   const cleanups = owner.cleanups.splice(0);
 
@@ -236,7 +332,7 @@ function runCleanups(owner) {
  * @param {Object} owner - 需要被处置的所有者对象。如果该对象为空或已被处置，则直接返回。
  * @returns {void}
  */
-function disposeOwner(owner) {
+function disposeOwner(owner: OwnerNode | null | undefined): void {
   // 检查所有者是否存在以及是否已被处置，避免重复处理
   if (!owner || owner.disposed) return;
   owner.disposed = true;
@@ -263,7 +359,7 @@ function disposeOwner(owner) {
  * @param {Object} owner - 需要被分离的所有者对象，该对象应包含 parent 或 owner 属性以定位其容器，且容器需拥有 owned 数组。
  * @returns {void}
  */
-function detachFromParent(owner) {
+function detachFromParent(owner: any): void {
   // 确定所有者所在的父级容器，优先检查 parent 属性，其次检查 owner 属性
   const parent = owner?.parent || owner?.owner;
   if (!parent?.owned) return;
@@ -282,7 +378,7 @@ function detachFromParent(owner) {
  * @param {Object} [owner=Owner] - 错误处理的起始所有者对象，默认为全局 Owner。
  * @returns {boolean} - 如果错误被成功处理则返回 true，否则返回 false。
  */
-function handleError(error, owner = Owner) {
+function handleError(error: any, owner: OwnerNode | null = Owner): boolean {
   let cursor = owner;
 
   // 沿父级层级链向上遍历，寻找第一个定义了 errorHandler 函数的对象
@@ -291,7 +387,7 @@ function handleError(error, owner = Owner) {
       cursor.errorHandler(error);
       return true;
     }
-    cursor = cursor.parent;
+    cursor = cursor.parent || null;
   }
 
   // 若未找到任何错误处理函数，则发出未处理错误事件
@@ -310,7 +406,7 @@ function handleError(error, owner = Owner) {
  *
  * @returns {Function} 一个接受两个参数并返回布尔值的相等性比较函数。
  */
-function equalsFromOptions(options) {
+function equalsFromOptions<T = any>(options: SignalOptions<T>): Equality<T> {
   // 如果明确禁用相等性检查（equals === false），返回一个恒假函数
   if (options.equals === false) return () => false;
 
@@ -326,7 +422,7 @@ function equalsFromOptions(options) {
  * @param {Object} source - 需要被追踪的数据源对象
  * @returns {void}
  */
-function trackSource(source) {
+function trackSource(source: ReactiveSource): void {
   // 若不存在全局监听器或监听器已销毁，则中止追踪
   if (!Listener || Listener.disposed) return;
 
@@ -348,7 +444,7 @@ function trackSource(source) {
  * @param {Set} source.observers - 观察者集合，每个观察者将被标记为 stale
  * @returns {void}
  */
-function notifySource(source) {
+function notifySource(source: ReactiveSource): void {
   // 如果没有观察者或观察者集合为空，则提前返回
   if (!source.observers || source.observers.size === 0) return;
 
@@ -366,7 +462,7 @@ function notifySource(source) {
  * @param {Object} node - 需要被标记的节点对象。如果节点为空或已销毁，则直接返回。
  * @returns {void}
  */
-function markStale(node) {
+function markStale(node: Computation | null | undefined): void {
   // 如果节点不存在或已被销毁，则提前退出
   if (!node || node.disposed) return;
 
@@ -376,7 +472,7 @@ function markStale(node) {
     if (node.state === STALE) return;
     node.state = STALE;
     // 如果存在观察者，则运行 memo 计算以传播变化
-    if (node.observers?.size > 0) runMemo(node);
+    if ((node.observers?.size || 0) > 0) runMemo(node);
     return;
   }
 
@@ -393,7 +489,7 @@ function markStale(node) {
  * @param {Object} node - 需要重新执行的计算节点。
  * @returns {void}
  */
-function scheduleComputation(node) {
+function scheduleComputation(node: Computation | null | undefined): void {
   if (!node || node.disposed || node.queued) return;
 
   node.queued = true;
@@ -413,7 +509,7 @@ function scheduleComputation(node) {
  *
  * @returns {void}
  */
-function scheduleEffectFlush() {
+function scheduleEffectFlush(): void {
   if (batchDepth > 0 || effectFlushPending || flushing) return;
   effectFlushPending = true;
   queueTask(flushEffects);
@@ -426,17 +522,21 @@ function scheduleEffectFlush() {
  *
  * @returns {void}
  */
-function scheduleTransitionFlush() {
+function scheduleTransitionFlush(): void {
   if (batchDepth > 0 || transitionFlushPending) return;
   transitionFlushPending = true;
 
   /**
    * @type {(callback: () => void) => void}
    */
-  const schedule =
+  const schedule: (callback: () => void) => void =
     typeof requestIdleCallback === 'function'
-      ? requestIdleCallback
-      : (callback) => setTimeout(callback, 0);
+      ? (callback) => {
+          requestIdleCallback(callback);
+        }
+      : (callback) => {
+          setTimeout(callback, 0);
+        };
 
   schedule(flushTransitions);
 }
@@ -449,7 +549,7 @@ function scheduleTransitionFlush() {
  * @param {Set<Object>} queue - 待处理的计算节点集合。
  * @returns {Object[]} 排序后的计算节点数组。
  */
-function drainQueue(queue) {
+function drainQueue(queue: Set<Computation>): Computation[] {
   const computations = Array.from(queue);
   queue.clear();
   computations.sort((a, b) => b.priority - a.priority || a.id - b.id);
@@ -464,7 +564,7 @@ function drainQueue(queue) {
  *
  * @returns {void}
  */
-function flushEffects() {
+function flushEffects(): void {
   if (flushing) return;
 
   effectFlushPending = false;
@@ -497,7 +597,7 @@ function flushEffects() {
  *
  * @returns {void}
  */
-function flushTransitions() {
+function flushTransitions(): void {
   transitionFlushPending = false;
 
   if (TRANSITION_QUEUE.size === 0) return;
@@ -519,7 +619,7 @@ function flushTransitions() {
  * @param {Object} computation - 需要清理依赖的计算节点。
  * @returns {void}
  */
-function cleanupSources(computation) {
+function cleanupSources(computation: Computation): void {
   computation.sources.forEach((source) => {
     source.observers?.delete(computation);
   });
@@ -539,17 +639,17 @@ function cleanupSources(computation) {
  * @param {Function} [options.equals=Object.is] - memo 值比较函数。
  * @returns {Object} 新创建的计算节点。
  */
-function createComputation(fn, options = {}) {
+function createComputation(fn: (value: any) => any, options: ComputationOptions = {}): Computation {
   const owner = Owner;
-  const computation = {
+  const computation: Computation = {
     id: ++computationId,
     type: options.type || 'effect',
     fn,
     owner,
     owned: [],
     cleanups: [],
-    sources: new Set(),
-    observers: options.type === 'memo' ? new Set() : null,
+    sources: new Set<ReactiveSource>(),
+    observers: options.type === 'memo' ? new Set<Computation>() : null,
     disposed: false,
     queued: false,
     running: false,
@@ -558,6 +658,7 @@ function createComputation(fn, options = {}) {
     value: options.value,
     priority: options.priority || 0,
     equals: options.equals || Object.is,
+    errorHandler: null,
     dispose() {
       disposeComputation(computation);
     },
@@ -578,7 +679,7 @@ function createComputation(fn, options = {}) {
  * @param {Object} computation - 需要销毁的计算节点。
  * @returns {void}
  */
-function disposeComputation(computation) {
+function disposeComputation(computation: any): void {
   if (!computation || computation.disposed) return;
 
   computation.disposed = true;
@@ -608,7 +709,7 @@ function disposeComputation(computation) {
  * @param {Object} computation - 要运行的计算节点。
  * @returns {*} 计算函数返回的新值。
  */
-function runComputation(computation) {
+function runComputation(computation: Computation): any {
   if (computation.disposed) return computation.value;
   if (computation.running) {
     throw new Error('Circular dependency detected in reactive computation');
@@ -650,7 +751,7 @@ function runComputation(computation) {
  * @param {Object} owner - 需要清理子资源的 owner。
  * @returns {void}
  */
-function disposeOwnedAndCleanups(owner) {
+function disposeOwnedAndCleanups(owner: OwnerNode): void {
   const owned = owner.owned.splice(0);
   for (let i = owned.length - 1; i >= 0; i--) {
     disposeComputation(owned[i]);
@@ -666,7 +767,7 @@ function disposeOwnedAndCleanups(owner) {
  * @param {Object} computation - effect 计算节点。
  * @returns {void}
  */
-function runEffect(computation) {
+function runEffect(computation: Computation): void {
   runComputation(computation);
 }
 
@@ -678,7 +779,7 @@ function runEffect(computation) {
  * @param {Object} computation - memo 计算节点。
  * @returns {*} memo 的当前缓存值。
  */
-function runMemo(computation) {
+function runMemo(computation: Computation): any {
   if (computation.state === CLEAN) return computation.value;
   const previous = computation.value;
   const hadValue = computation.initialized;
@@ -696,21 +797,22 @@ function runMemo(computation) {
  * Core APIs
  * ====================== */
 
-export function createSignal(initial, options = {}) {
+export function createSignal<T = any>(initial: T, options: SignalOptions<T> = {}): SignalTuple<T> {
   let value = initial;
-  const signal = {
-    observers: new Set(),
+  const signal: ReactiveSource = {
+    observers: new Set<Computation>(),
     equals: equalsFromOptions(options),
   };
 
-  function read() {
+  function read(): T {
     trackSource(signal);
     return value;
   }
 
-  function write(next) {
-    const nextValue = typeof next === 'function' ? next(value) : next;
-    if (signal.equals(value, nextValue)) return value;
+  function write(next: T | ((previous: T) => T)): T {
+    const nextValue =
+      typeof next === 'function' ? (next as (previous: T) => T)(value) : next;
+    if (signal.equals?.(value, nextValue)) return value;
 
     const previous = value;
     value = nextValue;
@@ -719,10 +821,10 @@ export function createSignal(initial, options = {}) {
     return value;
   }
 
-  read.peek = () => value;
-  read.toJSON = () => value;
+  (read as Accessor<T>).peek = () => value;
+  (read as Accessor<T>).toJSON = () => value;
 
-  return [read, write];
+  return [read as Accessor<T>, write];
 }
 
 /**
@@ -736,7 +838,7 @@ export function createSignal(initial, options = {}) {
  * @param {number} [options.priority=0] - 调度优先级。
  * @returns {Object} 可 dispose 的计算节点。
  */
-export function createEffect(fn, options = {}) {
+export function createEffect(fn: (value?: any) => any, options: EffectOptions = {}): Computation {
   const computation = createComputation(fn, {
     type: 'effect',
     priority: options.priority || 0,
@@ -760,7 +862,7 @@ export function createEffect(fn, options = {}) {
  * @param {Object} [options={}] - 计算配置。
  * @returns {Object} 可 dispose 的计算节点。
  */
-export function createComputed(fn, options = {}) {
+export function createComputed(fn: (value?: any) => any, options: EffectOptions = {}): Computation {
   return createEffect(fn, options);
 }
 
@@ -774,7 +876,7 @@ export function createComputed(fn, options = {}) {
  * @param {Object} [options={}] - memo 配置。
  * @returns {Function} memo 读取函数。
  */
-export function createMemo(fn, initial, options = {}) {
+export function createMemo<T = any>(fn: (previous?: T) => T, initial?: any, options: any = {}): Accessor<T> {
   if (
     initial &&
     typeof initial === 'object' &&
@@ -794,16 +896,16 @@ export function createMemo(fn, initial, options = {}) {
 
   if (!options.defer) runMemo(computation);
 
-  function read() {
+  function read(): T {
     if (computation.state === STALE) runMemo(computation);
     trackSource(computation);
     return computation.value;
   }
 
-  read.peek = () => computation.value;
-  read.dispose = () => disposeComputation(computation);
+  (read as Accessor<T>).peek = () => computation.value;
+  (read as Accessor<T>).dispose = () => disposeComputation(computation);
 
-  return read;
+  return read as Accessor<T>;
 }
 
 /**
@@ -817,10 +919,10 @@ export function createMemo(fn, initial, options = {}) {
  * @param {boolean} [options.defer=false] - 是否跳过首次回调。
  * @returns {Object} 底层 effect 计算节点。
  */
-export function createWatch(source, fn, options = {}) {
+export function createWatch(source: MaybeAccessor | MaybeAccessor[], fn: (next: any, previous: any) => void, options: EffectOptions = {}): Computation {
   const sources = Array.isArray(source) ? source : [source];
-  let previous;
-  let initialized = false;
+  let previous: any;
+  let initialized: boolean = false;
 
   return createEffect(() => {
     const values = sources.map((item) => access(item));
@@ -852,7 +954,7 @@ export function createWatch(source, fn, options = {}) {
  * @param {Function} [equals=Object.is] - key 比较函数。
  * @returns {Function} 接收 key 并返回是否匹配的函数。
  */
-export function createSelector(source, equals = Object.is) {
+export function createSelector<T = any>(source: MaybeAccessor<T>, equals: (a: any, b: any) => boolean = Object.is): (key: T) => boolean {
   const selected = createMemo(() => access(source));
   return (key) => equals(selected(), key);
 }
@@ -865,7 +967,7 @@ export function createSelector(source, equals = Object.is) {
  * @param {Function} fn - 批处理函数。
  * @returns {*} fn 的返回值。
  */
-export function batch(fn) {
+export function batch<T = any>(fn: () => T): T {
   batchDepth++;
   try {
     return fn();
@@ -886,7 +988,7 @@ export function batch(fn) {
  * @param {Function} fn - 要执行的函数。
  * @returns {*} fn 的返回值。
  */
-export function untrack(fn) {
+export function untrack<T = any>(fn: () => T): T {
   const prevListener = Listener;
   Listener = null;
   try {
@@ -904,7 +1006,7 @@ export function untrack(fn) {
  * @param {Function} [fn] - 可选的同步更新函数。
  * @returns {*} fn 的返回值。
  */
-export function flushSync(fn) {
+export function flushSync<T = any>(fn?: () => T): T | undefined {
   const result = fn ? batch(fn) : undefined;
   flushEffects();
   return result;
@@ -918,7 +1020,7 @@ export function flushSync(fn) {
  * @param {Function} fn - transition 回调。
  * @returns {*} fn 的返回值。
  */
-export function startTransition(fn) {
+export function startTransition<T = any>(fn: () => T): T {
   transitionDepth++;
   try {
     return fn();
@@ -934,7 +1036,7 @@ export function startTransition(fn) {
  * Lifecycle
  * ====================== */
 
-export function onCleanup(fn) {
+export function onCleanup<T extends () => void>(fn: T): T {
   if (!Owner) return fn;
   Owner.cleanups.push(fn);
   return fn;
@@ -948,7 +1050,7 @@ export function onCleanup(fn) {
  * @param {Function} fn - 销毁回调。
  * @returns {Function} 原始回调。
  */
-export function onDispose(fn) {
+export function onDispose<T extends () => void>(fn: T): T {
   return onCleanup(fn);
 }
 
@@ -960,7 +1062,7 @@ export function onDispose(fn) {
  * @param {Function} fn - 挂载回调。
  * @returns {void}
  */
-export function onMount(fn) {
+export function onMount(fn: () => void): void {
   const owner = Owner;
   queueTask(() => {
     if (!owner || !owner.disposed) runWithOwner(owner, fn);
@@ -975,7 +1077,7 @@ export function onMount(fn) {
  * @param {Function} [fn] - 创建作用域后立即执行的函数。
  * @returns {Object} 包含 result、dispose 和 run 的作用域对象。
  */
-export function createScope(fn) {
+export function createScope<T = any>(fn?: () => T): { result: T | undefined; dispose: () => void; run: <R = any>(fn: () => R) => R | undefined } {
   const scope = createOwner(Owner, 'scope');
   const result = runWithOwner(scope, () => fn?.());
 
@@ -998,12 +1100,12 @@ export function createScope(fn) {
  * @param {Function} fn - 根作用域回调，接收 dispose 函数。
  * @returns {*} fn 的返回值；如果返回 undefined，则返回默认作用域控制对象。
  */
-export function createRoot(fn) {
+export function createRoot<T = any>(fn: (dispose: () => void) => T): any {
   const root = createOwner(Owner, 'root');
   const dispose = () => disposeOwner(root);
   const result = runWithOwner(root, () => fn?.(dispose));
   return result === undefined
-    ? { dispose, run: (cb) => runWithOwner(root, cb) }
+    ? { dispose, run: (cb: () => any) => runWithOwner(root, cb) }
     : result;
 }
 
@@ -1011,9 +1113,9 @@ export function createRoot(fn) {
  * Error Boundary
  * ====================== */
 
-export function createErrorBoundary(fn, fallback) {
+export function createErrorBoundary(fn: () => void, fallback?: any): { error: Accessor<any>; fallback: any; hasError: () => boolean; reset: () => void; dispose: () => void } {
   const [error, setError] = createSignal(null);
-  let scope = null;
+  let scope: { dispose: () => void; run: (cb: () => any) => any } | null = null;
 
   const setup = () => {
     const parent = Owner;
@@ -1059,12 +1161,14 @@ export function createErrorBoundary(fn, fallback) {
  * @param {*|Function} fallback - 错误发生时返回的值或错误映射函数。
  * @returns {*} fn 的结果或 fallback 结果。
  */
-export function catchError(fn, fallback) {
+export function catchError<T = any>(fn: () => T, fallback: T | ((error: any) => T)): T {
   try {
     return fn();
   } catch (error) {
     emit('catch-error', { error });
-    return typeof fallback === 'function' ? fallback(error) : fallback;
+    return typeof fallback === 'function'
+      ? (fallback as (error: any) => T)(error)
+      : fallback;
   }
 }
 
@@ -1073,15 +1177,15 @@ export function catchError(fn, fallback) {
  * ====================== */
 
 // Store 原始对象到元数据的映射，每个原始对象拥有一组按 key 划分的依赖 signal。
-const STORE_META = new WeakMap();
+const STORE_META = new WeakMap<object, StoreMeta>();
 // 浅层 store 的 proxy 缓存，确保同一个原始对象复用同一个 proxy。
-const STORE_CACHE = new WeakMap();
+const STORE_CACHE = new WeakMap<object, any>();
 // 深层 store 的 proxy 缓存，用于懒代理嵌套对象。
-const DEEP_STORE_CACHE = new WeakMap();
+const DEEP_STORE_CACHE = new WeakMap<object, any>();
 // 只读 store 的 proxy 缓存。
-const READONLY_CACHE = new WeakMap();
+const READONLY_CACHE = new WeakMap<object, any>();
 // proxy 到原始对象的反向映射，用于 unwrap 与写入前去代理。
-const PROXY_TO_RAW = new WeakMap();
+const PROXY_TO_RAW = new WeakMap<object, any>();
 
 /**
  * 获取原始 store 对象的响应式元数据。
@@ -1091,7 +1195,7 @@ const PROXY_TO_RAW = new WeakMap();
  * @param {Object} target - 原始 store 对象。
  * @returns {Object} store 元数据。
  */
-function getStoreMeta(target) {
+function getStoreMeta(target: object): StoreMeta {
   let meta = STORE_META.get(target);
   if (!meta) {
     meta = { deps: new Map() };
@@ -1109,7 +1213,7 @@ function getStoreMeta(target) {
  * @param {string|symbol} key - 属性 key 或特殊追踪 key。
  * @returns {[Function, Function]} 版本 signal。
  */
-function getStoreDep(target, key) {
+function getStoreDep(target: object, key: PropertyKey): SignalTuple<number> {
   const meta = getStoreMeta(target);
   let dep = meta.deps.get(key);
   if (!dep) {
@@ -1126,7 +1230,7 @@ function getStoreDep(target, key) {
  * @param {string|symbol} key - 被读取的 key。
  * @returns {void}
  */
-function trackKey(target, key) {
+function trackKey(target: object, key: PropertyKey): void {
   getStoreDep(target, key)[0]();
 }
 
@@ -1137,7 +1241,7 @@ function trackKey(target, key) {
  * @param {string|symbol} key - 发生变化的 key。
  * @returns {void}
  */
-function triggerKey(target, key) {
+function triggerKey(target: object, key: PropertyKey): void {
   const dep = getStoreMeta(target).deps.get(key);
   if (dep) dep[1]((value) => value + 1);
 }
@@ -1150,8 +1254,8 @@ function triggerKey(target, key) {
  * @param {*} value - 可能是 store proxy 的值。
  * @returns {*} 原始值或传入值。
  */
-function unwrapShallow(value) {
-  return PROXY_TO_RAW.get(value) || value;
+function unwrapShallow<T = any>(value: T): any {
+  return isObject(value) ? PROXY_TO_RAW.get(value) || value : value;
 }
 
 /**
@@ -1163,22 +1267,22 @@ function unwrapShallow(value) {
  * @param {WeakMap} [seen=new WeakMap()] - 循环引用缓存。
  * @returns {*} 解包后的普通值。
  */
-export function unwrap(value, seen = new WeakMap()) {
+export function unwrap<T = any>(value: T, seen: WeakMap<object, any> = new WeakMap()): any {
   const raw = unwrapShallow(value);
   if (!isObject(raw)) return raw;
   if (seen.has(raw)) return seen.get(raw);
 
   if (Array.isArray(raw)) {
-    const output = [];
+    const output: any[] = [];
     seen.set(raw, output);
     for (let i = 0; i < raw.length; i++) output[i] = unwrap(raw[i], seen);
     return output;
   }
 
-  const output = {};
+  const output: Record<string, any> = {};
   seen.set(raw, output);
   Object.keys(raw).forEach((key) => {
-    output[key] = unwrap(raw[key], seen);
+    output[key] = unwrap((raw as Record<string, any>)[key], seen);
   });
   return output;
 }
@@ -1189,7 +1293,7 @@ export function unwrap(value, seen = new WeakMap()) {
  * @param {*} value - store、数组或普通值。
  * @returns {*} 解包后的快照。
  */
-export function snapshot(value) {
+export function snapshot<T = any>(value: T): any {
   return unwrap(value);
 }
 
@@ -1199,7 +1303,7 @@ export function snapshot(value) {
  * @param {string|symbol} key - 待判断的属性 key。
  * @returns {boolean} 如果 key 表示合法数组索引则返回 true。
  */
-function isArrayIndex(key) {
+function isArrayIndex(key: PropertyKey): boolean {
   if (typeof key === 'symbol') return false;
   const value = String(key);
   if (value === '') return false;
@@ -1213,7 +1317,7 @@ function isArrayIndex(key) {
 }
 
 // 会改变数组自身结构或内容的方法，需要手动触发数组相关依赖。
-const ARRAY_MUTATORS = new Set([
+const ARRAY_MUTATORS = new Set<string>([
   'copyWithin',
   'fill',
   'pop',
@@ -1233,7 +1337,7 @@ const ARRAY_MUTATORS = new Set([
  * @param {number} end - 结束索引，不包含。
  * @returns {void}
  */
-function triggerArrayRange(target, start, end) {
+function triggerArrayRange(target: any[], start: number, end: number): void {
   for (let i = start; i < end; i++) triggerKey(target, String(i));
 }
 
@@ -1247,7 +1351,7 @@ function triggerArrayRange(target, start, end) {
  * @param {number} newLength - 变异后数组长度。
  * @returns {void}
  */
-function triggerArrayMutation(target, method, args, oldLength, newLength) {
+function triggerArrayMutation(target: any[], method: string, args: any[], oldLength: number, newLength: number): void {
   const maxLength = Math.max(oldLength, newLength);
 
   if (method === 'push') {
@@ -1277,8 +1381,8 @@ function triggerArrayMutation(target, method, args, oldLength, newLength) {
  * @param {boolean} readonly - 是否为只读 store。
  * @returns {Function} 包装后的数组方法。
  */
-function createArrayMethod(target, receiver, key, readonly) {
-  const method = Array.prototype[key];
+function createArrayMethod(target: any[], receiver: any[], key: string, readonly: boolean): AnyFn {
+  const method = (Array.prototype as any)[key] as AnyFn;
 
   if (ARRAY_MUTATORS.has(key)) {
     return (...args) => {
@@ -1290,7 +1394,7 @@ function createArrayMethod(target, receiver, key, readonly) {
       }
 
       const oldLength = target.length;
-      let result;
+      let result: any;
       batch(() => {
         result = method.apply(target, args.map(unwrapShallow));
         triggerArrayMutation(target, key, args, oldLength, target.length);
@@ -1314,18 +1418,18 @@ function createArrayMethod(target, receiver, key, readonly) {
  * @param {boolean} readonly - 是否创建只读代理。
  * @returns {*} proxy 或不可包装的原值。
  */
-function createProxy(target, deep, readonly) {
-  target = unwrapShallow(target);
+function createProxy<T = any>(target: T, deep: boolean, readonly: boolean): T {
+  target = unwrapShallow(target) as T;
   if (!isWrappable(target)) return target;
 
-  const cache = readonly
+  const cache: WeakMap<object, any> = readonly
     ? READONLY_CACHE
     : deep
       ? DEEP_STORE_CACHE
       : STORE_CACHE;
-  if (cache.has(target)) return cache.get(target);
+  if (isObject(target) && cache.has(target)) return cache.get(target);
 
-  const proxy = new Proxy(target, {
+  const proxy = new Proxy(target as any, {
     get(obj, key, receiver) {
       if (key === RAW) return obj;
       if (key === IS_STORE) return true;
@@ -1429,9 +1533,9 @@ function createProxy(target, deep, readonly) {
     },
   });
 
-  cache.set(target, proxy);
+  cache.set(target as object, proxy);
   PROXY_TO_RAW.set(proxy, target);
-  return proxy;
+  return proxy as T;
 }
 
 /**
@@ -1442,7 +1546,7 @@ function createProxy(target, deep, readonly) {
  * @param {Object|Array} [target={}] - 初始对象或数组。
  * @returns {*} 响应式 store proxy。
  */
-export function createStore(target = {}) {
+export function createStore<T extends object = Record<string, any>>(target: T = {} as T): T {
   return createProxy(target, false, false);
 }
 
@@ -1454,7 +1558,7 @@ export function createStore(target = {}) {
  * @param {Object|Array} [target={}] - 初始对象或数组。
  * @returns {*} 深层响应式 store proxy。
  */
-export function createDeepStore(target = {}) {
+export function createDeepStore<T extends object = Record<string, any>>(target: T = {} as T): T {
   return createProxy(target, true, false);
 }
 
@@ -1466,8 +1570,8 @@ export function createDeepStore(target = {}) {
  * @param {Object|Array} [target={}] - 初始对象或数组。
  * @returns {*} 只读 store proxy。
  */
-export function createReadonly(target = {}) {
-  return createProxy(target, true, true);
+export function createReadonly<T extends object = Record<string, any>>(target: T = {} as T): Readonly<T> {
+  return createProxy(target, true, true) as Readonly<T>;
 }
 
 /**
@@ -1479,7 +1583,7 @@ export function createReadonly(target = {}) {
  * @param {Function} recipe - 直接修改 store 的函数。
  * @returns {*} 原 store。
  */
-export function produce(store, recipe) {
+export function produce<T>(store: T, recipe: (store: T) => void): T {
   batch(() => recipe(store));
   return store;
 }
@@ -1488,7 +1592,7 @@ export function produce(store, recipe) {
  * Resource & Suspense
  * ====================== */
 
-export function createResource(source, fetcher, options) {
+export function createResource<T = any>(source: any, fetcher?: any, options?: any): [ResourceAccessor<T>, ResourceControls<T>] {
   if (typeof fetcher !== 'function') {
     options = fetcher || {};
     fetcher = source;
@@ -1505,21 +1609,21 @@ export function createResource(source, fetcher, options) {
     isStale: false,
   });
 
-  let requestId = 0;
-  let pending = null;
-  let loadingTimer = null;
-  let controller = null;
+  let requestId: number = 0;
+  let pending: Promise<any> | null = null;
+  let loadingTimer: ReturnType<typeof setTimeout> | null = null;
+  let controller: AbortController | null = null;
 
   const hasData = () => state.data !== undefined;
 
-  function clearLoadingTimer() {
+  function clearLoadingTimer(): void {
     if (loadingTimer) {
       clearTimeout(loadingTimer);
       loadingTimer = null;
     }
   }
 
-  function setLoading(value, delay = 0) {
+  function setLoading(value: boolean, delay = 0): void {
     clearLoadingTimer();
     if (!value) {
       state.loading = false;
@@ -1542,7 +1646,7 @@ export function createResource(source, fetcher, options) {
    * @param {boolean} [refetching=false] - 标识当前是否为重新获取数据的操作。
    * @returns {Promise} 返回一个 Promise，解析后得到获取的数据。
    */
-  function load(value, refetching = false) {
+  function load(value: any, refetching = false): Promise<T> {
     // 生成唯一请求ID以处理竞态条件，并获取配置的加载延迟时间
     const id = ++requestId;
     const delay = options.loadingDelay || 0;
@@ -1565,7 +1669,7 @@ export function createResource(source, fetcher, options) {
         signal: controller?.signal,
       })
     )
-      .then((data) => {
+      .then((data: T) => {
         // 忽略过时请求的响应，更新最新数据并重置加载状态
         if (id !== requestId) return state.data;
         clearLoadingTimer();
@@ -1575,7 +1679,7 @@ export function createResource(source, fetcher, options) {
         state.isStale = false;
         return data;
       })
-      .catch((error) => {
+      .catch((error: any) => {
         // 处理请求中止或失败的情况，仅对当前有效请求更新错误状态
         if (id !== requestId && error?.name === 'AbortError') return state.data;
         if (id === requestId) {
@@ -1610,7 +1714,7 @@ export function createResource(source, fetcher, options) {
    *
    * @returns {*} 当前资源数据。
    */
-  function read() {
+  function read(): T | undefined {
     if (
       options.suspense &&
       state.loading &&
@@ -1623,25 +1727,28 @@ export function createResource(source, fetcher, options) {
     return state.data;
   }
 
-  read.loading = () => state.loading;
-  read.error = () => state.error;
-  read.latest = () => state.latest;
+  (read as ResourceAccessor<T>).loading = () => state.loading;
+  (read as ResourceAccessor<T>).error = () => state.error;
+  (read as ResourceAccessor<T>).latest = () => state.latest;
 
   return [
-    read,
+    read as ResourceAccessor<T>,
     {
       state,
-      mutate(value) {
-        state.data = typeof value === 'function' ? value(state.data) : value;
+      mutate(value: T | ((previous: T | undefined) => T)) {
+        state.data =
+          typeof value === 'function'
+            ? (value as (previous: T | undefined) => T)(state.data)
+            : value;
         state.latest = state.data;
       },
-      reload(value) {
+      reload(value?: any) {
         return load(
           value === undefined && source ? access(source) : value,
           true
         );
       },
-      refetch(value) {
+      refetch(value?: any) {
         return load(
           value === undefined && source ? access(source) : value,
           false
@@ -1659,7 +1766,7 @@ export function createResource(source, fetcher, options) {
  * @param {Object|Function} options - 查询配置，或直接作为 queryFn 的函数。
  * @returns {Function} 查询读取函数，附带 state、refetch、retry、promise。
  */
-export function createQuery(options) {
+export function createQuery<T = any>(options: any): QueryAccessor<T> {
   if (typeof options === 'function') {
     options = { queryFn: options };
   }
@@ -1671,7 +1778,7 @@ export function createQuery(options) {
     queryFn,
     queryKey,
     retry = 0,
-    retryDelay = (attempt) => Math.min(1000 * attempt, 3000),
+    retryDelay = (attempt: number) => Math.min(1000 * attempt, 3000),
   } = options || {};
 
   if (typeof queryFn !== 'function') {
@@ -1691,24 +1798,24 @@ export function createQuery(options) {
     updatedAt: initialData === undefined ? 0 : Date.now(),
   });
 
-  let requestId = 0;
-  let currentPromise = null;
-  let controller = null;
+  let requestId: number = 0;
+  let currentPromise: Promise<T | undefined> | null = null;
+  let controller: AbortController | null = null;
 
-  function getKey() {
+  function getKey(): any {
     return access(queryKey);
   }
 
-  function getEnabled() {
+  function getEnabled(): boolean {
     return !!access(enabled);
   }
 
-  function waitDelay(value, attempt) {
+  function waitDelay(value: number | ((attempt: number) => number), attempt: number): Promise<void> {
     const delay = typeof value === 'function' ? value(attempt) : value;
     return sleepFor(delay || 0);
   }
 
-  async function execute({ force = false } = {}) {
+  async function execute({ force = false }: { force?: boolean } = {}): Promise<T | undefined> {
     if (!force && !getEnabled()) return state.data;
 
     const id = ++requestId;
@@ -1726,7 +1833,7 @@ export function createQuery(options) {
 
     let attempt = 0;
 
-    const run = async () => {
+    const run = async (): Promise<T | undefined> => {
       attempt++;
       try {
         const data = await queryFn({
@@ -1748,7 +1855,7 @@ export function createQuery(options) {
         state.status = 'success';
         state.updatedAt = Date.now();
         return data;
-      } catch (error) {
+      } catch (error: any) {
         if (id !== requestId && error?.name === 'AbortError') return state.data;
 
         const shouldRetry =
@@ -1786,16 +1893,16 @@ export function createQuery(options) {
     if (getEnabled()) execute().catch(() => undefined);
   });
 
-  function read() {
+  function read(): T | undefined {
     return state.data;
   }
 
-  read.state = state;
-  read.refetch = (options) => execute({ ...options, force: true });
-  read.retry = () => execute({ force: true });
-  read.promise = () => currentPromise;
+  (read as QueryAccessor<T>).state = state;
+  (read as QueryAccessor<T>).refetch = (options?: any) => execute({ ...options, force: true });
+  (read as QueryAccessor<T>).retry = () => execute({ force: true });
+  (read as QueryAccessor<T>).promise = () => currentPromise;
 
-  return read;
+  return read as QueryAccessor<T>;
 }
 
 /**
@@ -1806,9 +1913,9 @@ export function createQuery(options) {
  * @param {number} ms - 等待时间。
  * @returns {Promise<void>} 延迟完成的 Promise。
  */
-function sleepFor(ms) {
+function sleepFor(ms: number): Promise<void> {
   return new Promise((resolve) => {
-    const timer = setTimeout(resolve, ms);
+    const timer = setTimeout(resolve, ms) as any;
     timer?.unref?.();
   });
 }
@@ -1822,9 +1929,9 @@ function sleepFor(ms) {
  * @param {*|Function} fallback - pending 时返回的兜底值或访问器。
  * @returns {Function} memo 读取函数。
  */
-export function createSuspense(fn, fallback) {
+export function createSuspense<T = any>(fn: () => T, fallback: MaybeAccessor<T>): Accessor<T> {
   const [version, setVersion] = createSignal(0, { equals: false });
-  let pending = null;
+  let pending: Promise<any> | null = null;
 
   return createMemo(() => {
     version();
@@ -1833,9 +1940,10 @@ export function createSuspense(fn, fallback) {
       return fn();
     } catch (error) {
       if (error instanceof Promise) {
-        if (pending !== error) {
-          pending = error;
-          error.then(
+        const promise = error as Promise<any>;
+        if (pending !== promise) {
+          pending = promise;
+          promise.then(
             () => setVersion((value) => value + 1),
             () => setVersion((value) => value + 1)
           );
@@ -1856,7 +1964,7 @@ export function createSuspense(fn, fallback) {
  *
  * @returns {boolean} 如果 document 存在则返回 true。
  */
-function canUseDOM() {
+function canUseDOM(): boolean {
   return typeof document !== 'undefined';
 }
 
@@ -1866,7 +1974,7 @@ function canUseDOM() {
  * @param {*} value - 待判断值。
  * @returns {boolean} 如果值是 DOM Node 则返回 true。
  */
-function isNode(value) {
+function isNode(value: unknown): value is Node {
   return canUseDOM() && value instanceof Node;
 }
 
@@ -1878,13 +1986,13 @@ function isNode(value) {
  * @param {*} value - 可渲染值。
  * @returns {Node[]} DOM 节点数组。
  */
-function normalizeNodes(value) {
+function normalizeNodes(value: any): Node[] {
   value = access(value);
 
   if (value == null || value === false || value === true) return [];
 
   if (Array.isArray(value)) {
-    const nodes = [];
+    const nodes: Node[] = [];
     value.forEach((item) => {
       nodes.push(...normalizeNodes(item));
     });
@@ -1905,7 +2013,7 @@ function normalizeNodes(value) {
  * @param {Node[]} nodes - 需要移除的节点数组。
  * @returns {void}
  */
-function removeNodes(nodes) {
+function removeNodes(nodes: Node[]): void {
   nodes.forEach((node) => node.parentNode?.removeChild(node));
 }
 
@@ -1919,10 +2027,10 @@ function removeNodes(nodes) {
  * @param {Node|null} [marker=null] - 插入位置标记，节点会插入在该标记前。
  * @returns {Function} 清理函数。
  */
-export function insert(parent, value, marker = null) {
-  let current = [];
+export function insert(parent: Node, value: any, marker: Node | null = null): () => void {
+  let current: Node[] = [];
 
-  const update = (next) => {
+  const update = (next: any) => {
     const nodes = normalizeNodes(next);
 
     if (
@@ -1931,7 +2039,7 @@ export function insert(parent, value, marker = null) {
       current[0].nodeType === 3 &&
       nodes[0].nodeType === 3
     ) {
-      current[0].data = nodes[0].data;
+      (current[0] as Text).data = (nodes[0] as Text).data;
       return;
     }
 
@@ -1961,7 +2069,7 @@ export function insert(parent, value, marker = null) {
  * @param {Element} container - DOM 容器。
  * @returns {Function} root dispose 函数。
  */
-export function render(value, container) {
+export function render(value: any, container: Element): any {
   container.textContent = '';
   return createRoot((dispose) => {
     const cleanup = insert(container, value);
@@ -1977,7 +2085,7 @@ export function render(value, container) {
  * @param {*|Function} signal - 文本值或访问器。
  * @returns {Object} effect 计算节点。
  */
-export function bindText(el, signal) {
+export function bindText(el: Element, signal: MaybeAccessor<any>): Computation {
   return createEffect(() => {
     const value = access(signal);
     el.textContent = value == null ? '' : String(value);
@@ -1994,7 +2102,7 @@ export function bindText(el, signal) {
  * @param {*|Function} signal - 属性值或访问器。
  * @returns {Object} effect 计算节点。
  */
-export function bindAttr(el, name, signal) {
+export function bindAttr(el: Element, name: string, signal: MaybeAccessor<any>): Computation {
   return createEffect(() => {
     const value = access(signal);
     if (value == null || value === false) {
@@ -2017,7 +2125,7 @@ export function bindAttr(el, name, signal) {
  * @param {*|Function} signal - 单个样式值或访问器。
  * @returns {Object} effect 计算节点。
  */
-export function bindStyle(el, name, signal) {
+export function bindStyle(el: any, name: string | Record<string, any>, signal?: MaybeAccessor<any>): Computation {
   if (typeof name === 'object') {
     return createEffect(() => setStyle(el, access(name)));
   }
@@ -2036,7 +2144,7 @@ export function bindStyle(el, name, signal) {
  * @param {*|Function} signal - 布尔值或访问器。
  * @returns {Object} effect 计算节点。
  */
-export function bindClass(el, name, signal) {
+export function bindClass(el: Element, name: string, signal: MaybeAccessor<any>): Computation {
   return createEffect(() => {
     el.classList.toggle(name, !!access(signal));
   });
@@ -2052,7 +2160,7 @@ export function bindClass(el, name, signal) {
  * @param {string} [display=''] - 显示时使用的 display 值。
  * @returns {Object} effect 计算节点。
  */
-export function bindShow(el, signal, display = '') {
+export function bindShow(el: HTMLElement | SVGElement, signal: MaybeAccessor<any>, display = ''): Computation {
   return createEffect(() => {
     el.style.display = access(signal) ? display : 'none';
   });
@@ -2068,12 +2176,12 @@ export function bindShow(el, signal, display = '') {
  * @param {Function} factory - 创建块内容的函数。
  * @returns {Function} 清理函数。
  */
-export function bindIf(anchor, condition, factory) {
-  const parent = anchor.parentNode;
+export function bindIf(anchor: Node, condition: MaybeAccessor<any>, factory: () => any): () => void {
+  const parent = anchor.parentNode as Node;
   const marker = document.createComment('if');
   parent.insertBefore(marker, anchor.nextSibling);
 
-  let cleanup = null;
+  let cleanup: (() => void) | null = null;
 
   const effect = createEffect(() => {
     const visible = !!access(condition);
@@ -2107,7 +2215,7 @@ export function bindIf(anchor, condition, factory) {
  * @param {number} index - 列表项索引。
  * @returns {*} 稳定 key。
  */
-function defaultListKey(item, index) {
+function defaultListKey(item: any, index: number): any {
   const value = access(item);
   if (value && typeof value === 'object') {
     if ('id' in value) return value.id;
@@ -2127,28 +2235,28 @@ function defaultListKey(item, index) {
  * @param {Object} [options={}] - 列表配置。
  * @returns {Function} 清理函数。
  */
-export function bindList(anchor, listSignal, renderItem, options = {}) {
+export function bindList(anchor: Node, listSignal: MaybeAccessor<any[]>, renderItem: (item: any, index: Accessor<number>, itemAccessor: Accessor<any>) => any, options: any = {}): () => void {
   const keyFn = options.key || defaultListKey;
   const listOwner = Owner;
-  let records = [];
-  let fallbackCleanup = null;
+  let records: any[] = [];
+  let fallbackCleanup: (() => void) | null = null;
 
   function clearFallback() {
     fallbackCleanup?.();
     fallbackCleanup = null;
   }
 
-  function showFallback(parent) {
+  function showFallback(parent: Node) {
     if (!options.fallback || fallbackCleanup) return;
     fallbackCleanup = insert(parent, options.fallback, anchor);
   }
 
   const effect = createEffect(() => {
-    const parent = anchor.parentNode;
+    const parent = anchor.parentNode as Node;
     const list = access(listSignal) || [];
-    const old = new Map();
-    const next = [];
-    const used = new Set();
+    const old = new Map<any, any>();
+    const next: any[] = [];
+    const used = new Set<any>();
 
     records.forEach((record) => {
       old.set(record.key, record);
@@ -2171,7 +2279,7 @@ export function bindList(anchor, listSignal, renderItem, options = {}) {
       } else {
         const [itemAccessor, setItem] = createSignal(item, { equals: false });
         const [indexAccessor, setIndex] = createSignal(index);
-        let nodes = [];
+        let nodes: Node[] = [];
         const dispose = runWithOwner(listOwner, () =>
           createRoot((rootDispose) => {
             nodes = normalizeNodes(
@@ -2198,7 +2306,7 @@ export function bindList(anchor, listSignal, renderItem, options = {}) {
     old.forEach((record) => record.dispose());
 
     next.forEach((record) => {
-      record.nodes.forEach((node) => parent.insertBefore(node, anchor));
+      record.nodes.forEach((node: Node) => parent.insertBefore(node, anchor));
     });
 
     if (next.length === 0) showFallback(parent);
@@ -2219,7 +2327,7 @@ export function bindList(anchor, listSignal, renderItem, options = {}) {
  * @param {string} property - 用作 key 的属性名。
  * @returns {Function} key 提取函数。
  */
-export function createListKey(property) {
+export function createListKey(property: string): (item: any) => any {
   return (item) => access(item)?.[property];
 }
 
@@ -2231,7 +2339,7 @@ export function createListKey(property) {
  * @param {...string} properties - 参与组合的属性名。
  * @returns {Function} key 提取函数。
  */
-export function createCompositeKey(...properties) {
+export function createCompositeKey(...properties: string[]): (item: any) => string {
   return (item) => {
     const value = access(item);
     return properties.map((property) => value?.[property]).join('_');
@@ -2243,7 +2351,7 @@ export function createCompositeKey(...properties) {
  * ====================== */
 
 // 需要使用 SVG 命名空间创建的标签集合。
-const SVG_TAGS = new Set([
+const SVG_TAGS = new Set<string>([
   'svg',
   'g',
   'path',
@@ -2271,7 +2379,7 @@ const SVG_TAGS = new Set([
  * @param {string} prop - 属性名，例如 onClick。
  * @returns {string|null} DOM 事件名，非事件属性返回 null。
  */
-function eventName(prop) {
+function eventName(prop: string): string | null {
   if (!/^on[A-Z]/.test(prop) && !/^on[a-z]/.test(prop)) return null;
   return prop.slice(2).toLowerCase();
 }
@@ -2285,7 +2393,7 @@ function eventName(prop) {
  * @param {string|Object|null} value - 样式值。
  * @returns {void}
  */
-function setStyle(el, value) {
+function setStyle(el: any, value: any): void {
   if (value == null) {
     el.removeAttribute('style');
     return;
@@ -2296,7 +2404,7 @@ function setStyle(el, value) {
     return;
   }
 
-  Object.keys(value).forEach((name) => {
+  Object.keys(value || {}).forEach((name) => {
     const styleValue = access(value[name]);
     el.style[name] = styleValue == null ? '' : String(styleValue);
   });
@@ -2309,9 +2417,10 @@ function setStyle(el, value) {
  * @param {Object} value - class 到布尔值/访问器的映射。
  * @returns {void}
  */
-function setClassList(el, value) {
-  Object.keys(value || {}).forEach((name) => {
-    el.classList.toggle(name, !!access(value[name]));
+function setClassList(el: Element, value: Record<string, any> | null | undefined): void {
+  const classMap = value || {};
+  Object.keys(classMap).forEach((name) => {
+    el.classList.toggle(name, !!access(classMap[name]));
   });
 }
 
@@ -2324,7 +2433,7 @@ function setClassList(el, value) {
  * @param {Element} el - DOM 元素。
  * @returns {void}
  */
-function setRef(ref, el) {
+function setRef(ref: any, el: Element): void {
   if (!ref) return;
   if (typeof ref === 'function') ref(el);
   else if (typeof ref === 'object') ref.current = el;
@@ -2340,7 +2449,7 @@ function setRef(ref, el) {
  * @param {*} value - 属性值。
  * @returns {void}
  */
-function setProperty(el, name, value) {
+function setProperty(el: any, name: string, value: any): void {
   if (name === 'children' || name === 'key') return;
 
   if (name === 'ref') {
@@ -2375,7 +2484,7 @@ function setProperty(el, name, value) {
     if (name in el && typeof el[name] !== 'function') {
       try {
         el[name] = value == null ? '' : false;
-      } catch (_) {
+      } catch {
         // Ignore readonly DOM properties.
       }
     }
@@ -2387,7 +2496,7 @@ function setProperty(el, name, value) {
     if (name in el) {
       try {
         el[name] = true;
-      } catch (_) {
+      } catch {
         // Ignore readonly DOM properties.
       }
     }
@@ -2398,7 +2507,7 @@ function setProperty(el, name, value) {
     try {
       el[name] = value;
       return;
-    } catch (_) {
+    } catch {
       // Fall through to setAttribute for readonly DOM properties.
     }
   }
@@ -2416,7 +2525,7 @@ function setProperty(el, name, value) {
  * @param {*} value - 属性值。
  * @returns {void}
  */
-function applyProp(el, name, value) {
+function applyProp(el: Element, name: string, value: any): void {
   const event = eventName(name);
   if (event && typeof value === 'function') {
     el.addEventListener(event, value);
@@ -2445,7 +2554,7 @@ function applyProp(el, name, value) {
  * @param {Array} children - rest children。
  * @returns {*} 规范化后的 children。
  */
-function normalizeChildren(props, children) {
+function normalizeChildren(props: any, children: any[]): any {
   if (children.length > 0) {
     return children.length === 1 ? children[0] : children;
   }
@@ -2462,17 +2571,17 @@ function normalizeChildren(props, children) {
  * @param {...*} children - 子节点。
  * @returns {*} 组件结果或 DOM 元素。
  */
-export function h(type, props, ...children) {
+export function h(type: string | ((props: any) => any), props?: any, ...children: any[]): any {
   props = props || {};
   const normalizedChildren = normalizeChildren(props, children);
 
   if (typeof type === 'function') {
-    return type({ ...props, children: normalizedChildren });
+    return (type as (props: any) => any)({ ...props, children: normalizedChildren });
   }
 
-  const el = SVG_TAGS.has(type)
+  const el = SVG_TAGS.has(type as string)
     ? document.createElementNS('http://www.w3.org/2000/svg', type)
-    : document.createElement(type);
+    : document.createElement(type as string);
 
   Object.keys(props).forEach((name) => {
     if (name !== 'children') applyProp(el, name, props[name]);
@@ -2496,7 +2605,7 @@ export const createElement = h;
  * @param {Object} [props={}] - Fragment props。
  * @returns {*} children 或空数组。
  */
-export function Fragment(props = {}) {
+export function Fragment(props: { children?: any } = {}): any {
   return props.children || [];
 }
 
@@ -2506,8 +2615,11 @@ export function Fragment(props = {}) {
  * @param {*} value - 待判断值。
  * @returns {boolean} 如果值是 TemplateStringsArray 则返回 true。
  */
-function isTemplateStrings(value) {
-  return Array.isArray(value) && Array.isArray(value.raw);
+function isTemplateStrings(value: unknown): value is TemplateStringsArray {
+  return (
+    Array.isArray(value) &&
+    Array.isArray((value as Partial<TemplateStringsArray>).raw)
+  );
 }
 
 /**
@@ -2518,16 +2630,16 @@ function isTemplateStrings(value) {
  * @param {*} value - 模板插值。
  * @returns {Node|Node[]} DOM 节点或节点数组。
  */
-function parseTemplateValue(value) {
+function parseTemplateValue(value: any): Node | Node[] {
   if (isAccessor(value)) {
     const fragment = document.createDocumentFragment();
     const marker = document.createComment('jui-dynamic');
     fragment.append(marker);
-    let cleanup = null;
+    let cleanup: (() => void) | null = null;
 
     createEffect(() => {
       cleanup?.();
-      cleanup = insert(marker.parentNode, value(), marker);
+      cleanup = insert(marker.parentNode as Node, value(), marker);
     });
 
     onCleanup(() => cleanup?.());
@@ -2550,11 +2662,11 @@ function parseTemplateValue(value) {
  * @param {string} markup - HTML 字符串。
  * @returns {Node|Node[]} 单个节点或节点数组。
  */
-export function html(markup) {
+export function html(markup: any): Node | Node[] {
   const template = document.createElement('template');
   template.innerHTML = String(markup || '').trim();
   return template.content.childNodes.length === 1
-    ? template.content.firstChild
+    ? (template.content.firstChild as Node)
     : Array.from(template.content.childNodes);
 }
 
@@ -2567,10 +2679,10 @@ export function html(markup) {
  * @param {Array} values - 插值数组。
  * @returns {Node|Node[]} DOM 节点或节点数组。
  */
-function templateToNodes(strings, values) {
+function templateToNodes(strings: TemplateStringsArray | string[], values: any[]): Node | Node[] {
   let html = '';
-  const attrTokens = new Map();
-  const attrNames = new Map();
+  const attrTokens = new Map<string, number>();
+  const attrNames = new Map<number, string>();
 
   for (let i = 0; i < strings.length; i++) {
     html += strings[i];
@@ -2596,20 +2708,22 @@ function templateToNodes(strings, values) {
 
   content.querySelectorAll('jui-slot').forEach((slot) => {
     const index = Number(slot.getAttribute('data-jui-slot'));
-    slot.replaceWith(parseTemplateValue(values[index]));
+    const parsed = parseTemplateValue(values[index]);
+    slot.replaceWith(...(Array.isArray(parsed) ? parsed : [parsed]));
   });
 
   content.querySelectorAll('*').forEach((node) => {
     Array.from(node.attributes).forEach((attr) => {
       if (!attrTokens.has(attr.value)) return;
       const index = attrTokens.get(attr.value);
+      if (index === undefined) return;
       node.removeAttribute(attr.name);
       applyProp(node, attrNames.get(index) || attr.name, values[index]);
     });
   });
 
   return content.childNodes.length === 1
-    ? content.firstChild
+    ? (content.firstChild as Node)
     : Array.from(content.childNodes);
 }
 
@@ -2623,7 +2737,7 @@ function templateToNodes(strings, values) {
  * @param {*} key - JSX key。
  * @returns {*} 渲染结果。
  */
-export function jsx(type, props, key) {
+export function jsx(type: any, props?: any, key?: any): any {
   if (isTemplateStrings(type)) {
     return templateToNodes(type, Array.prototype.slice.call(arguments, 1));
   }
@@ -2649,7 +2763,7 @@ export const jsxDEV = jsx;
  * @param {Object} props - Show 参数。
  * @returns {Function} 可渲染访问器。
  */
-export function Show(props) {
+export function Show(props: { when: MaybeAccessor<any>; children?: any; fallback?: any }): Accessor<any> {
   return () => {
     const when = access(props.when);
     if (when) {
@@ -2669,7 +2783,7 @@ export function Show(props) {
  * @param {Object} props - For 参数。
  * @returns {DocumentFragment} 包含列表锚点的片段。
  */
-export function For(props) {
+export function For(props: { each: MaybeAccessor<any[]>; children?: any; key?: (item: any, index: number) => any; fallback?: any }): DocumentFragment {
   const fragment = document.createDocumentFragment();
   const start = document.createComment('for-start');
   const end = document.createComment('for-end');
