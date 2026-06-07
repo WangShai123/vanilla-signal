@@ -1,38 +1,38 @@
-# Signal Documentation
+# Signal 使用文档
 
-`Signal` is a fine-grained reactive runtime, designed to closely match the SolidJS mental model while maintaining "zero dependencies and no build step required for direct browser usage". It's suitable for building small to medium-sized UIs, forms, lists, inventory tables, modal content, async data sections, and other interactions using vanilla JavaScript.
+`Signal` 是细粒度响应式运行时，设计目标是接近 SolidJS 的心智模型，同时保持“无依赖、无构建也能直接在浏览器中使用”。它适合用原生 JS 编写中小型 UI、表单、列表、库存表、弹窗内容、异步数据区块等交互。
 
-## Design Goals
+## 设计目标
 
-- Fine-grained updates: Only the effects or DOM elements that read a specific signal/store field will update when that field changes.
-- No framework dependencies: Doesn't rely on React/Vue/Solid, and doesn't require build tools.
-- Supports complex UI state: Handles deep objects, arrays, sorting, insertion, deletion, derived state, and async requests.
-- Supports JSX experience: Uses `` jsx `...` `` template literals in environments without builds; can integrate with JSX runtime in build environments.
-- Maintainable: Business code is organized in layers of state, memo, effect, and DOM binding.
+- 细粒度更新：读了哪个 signal/store 字段，就只在该字段变化时更新对应 effect 或 DOM。
+- 无框架依赖：不依赖 React/Vue/Solid，也不要求构建工具。
+- 支持复杂 UI 状态：支持深层对象、数组、排序、插入、删除、派生状态和异步请求。
+- 支持 JSX 使用体验：无构建环境使用 `` jsx `...` `` 模板；有构建环境可接入 JSX runtime。
+- 可维护：业务代码以 state、memo、effect、DOM binding 分层组织。
 
-## Build Outputs
+## 打包结果
 
-- `signal.mjs`: ES Module, suitable for modern browsers and build tools.
-- `signal.umd.js`: UMD module, suitable for direct inclusion in browsers via `<script>` tag. GlobalName: `signal`.
+- `signal.mjs`：ES Module，适合现代浏览器和构建工具。
+- `signal.umd.js`：UMD 模块，适合直接在浏览器中通过 `<script>` 引入。GlobalName: `signal`。
 
-## Basic Concepts
+## 基本概念
 
 ### Accessor
 
-The read function of a signal is called an accessor:
+Signal 的读取函数称为 accessor：
 
 ```js
 const [count, setCount] = createSignal(0);
 
-count(); // Read current value
-setCount(1); // Update
+count(); // 读取当前值
+setCount(1); // 更新
 ```
 
-Reading an accessor within reactive contexts like `createEffect`, `createMemo`, `insert`, or `jsx` dynamic interpolations automatically establishes dependencies.
+在 `createEffect`、`createMemo`、`insert`、`jsx` 动态插值等响应式上下文中读取 accessor，会自动建立依赖。
 
-### Owner and Cleanup
+### Owner 与清理
 
-`createRoot`, `createScope`, `createEffect`, and list item roots all form an owner tree. Cleanup functions registered with `onCleanup` execute when effects re-run or owners are disposed.
+`createRoot`、`createScope`、`createEffect`、列表项 root 都会形成 owner 树。`onCleanup` 注册的清理函数会在 effect 重跑或 owner 销毁时执行。
 
 ```js
 const dispose = createRoot((dispose) => {
@@ -44,7 +44,7 @@ const dispose = createRoot((dispose) => {
 dispose();
 ```
 
-### Recommended Organization
+### 推荐组织方式
 
 ```js
 const state = createDeepStore({
@@ -73,21 +73,21 @@ render(
 );
 ```
 
-## API Overview
+## API 总览
 
-| Category       | API                                                                                                       |
-| -------------- | --------------------------------------------------------------------------------------------------------- |
-| Core Reactive  | `createSignal`, `createEffect`, `createComputed`, `createMemo`, `createWatch`, `createSelector`, `access` |
-| Scheduling     | `batch`, `untrack`, `flushSync`, `startTransition`                                                        |
-| Lifecycle      | `createRoot`, `createScope`, `onCleanup`, `onDispose`, `onMount`, `getOwner`                              |
-| Error Handling | `createErrorBoundary`, `catchError`                                                                       |
-| Store          | `createStore`, `createDeepStore`, `createReadonly`, `produce`, `unwrap`, `snapshot`                       |
-| Async          | `createResource`, `createQuery`, `createSuspense`                                                         |
-| DOM            | `insert`, `render`, `bindText`, `bindAttr`, `bindStyle`, `bindClass`, `bindShow`, `bindIf`, `bindList`    |
-| List Helpers   | `createListKey`, `createCompositeKey`, `For`, `Show`                                                      |
-| JSX Runtime    | `jsx`, `jsxs`, `jsxDEV`, `h`, `createElement`, `Fragment`                                                 |
+| 分类        | API                                                                                                       |
+| ----------- | --------------------------------------------------------------------------------------------------------- |
+| 核心响应式  | `createSignal`, `createEffect`, `createComputed`, `createMemo`, `createWatch`, `createSelector`, `access` |
+| 调度        | `batch`, `untrack`, `flushSync`, `startTransition`                                                        |
+| 生命周期    | `createRoot`, `createScope`, `onCleanup`, `onDispose`, `onMount`, `getOwner`                              |
+| 错误处理    | `createErrorBoundary`, `catchError`                                                                       |
+| Store       | `createStore`, `createDeepStore`, `createReadonly`, `produce`, `unwrap`, `snapshot`                       |
+| 异步        | `createResource`, `createQuery`, `createSuspense`                                                         |
+| DOM         | `insert`, `render`, `bindText`, `bindAttr`, `bindStyle`, `bindClass`, `bindShow`, `bindIf`, `bindList`    |
+| 列表辅助    | `createListKey`, `createCompositeKey`, `For`, `Show`                                                      |
+| JSX Runtime | `jsx`, `jsxs`, `jsxDEV`, `h`, `createElement`, `Fragment`                                                 |
 
-## Core Reactive
+## 核心响应式
 
 ### createSignal
 
@@ -95,7 +95,7 @@ render(
 const [read, write] = createSignal(initial, options?)
 ```
 
-Used to store the most basic reactive values.
+用于保存最基础的响应式值。
 
 ```js
 const [count, setCount] = createSignal(0);
@@ -108,31 +108,31 @@ setCount(1);
 setCount((value) => value + 1);
 ```
 
-Options:
+选项：
 
 ```js
 createSignal(value, {
-  equals: Object.is, // default
+  equals: Object.is, // 默认
 });
 ```
 
-`equals` is used to determine if old and new values are the same. Set to `false` to force notification of dependencies on every write:
+`equals` 用于判断新旧值是否相同。设置为 `false` 可强制每次写入都通知依赖：
 
 ```js
 const [value, setValue] = createSignal({}, { equals: false });
-setValue(value()); // Still triggers
+setValue(value()); // 仍然触发
 ```
 
-Read without tracking:
+读取但不追踪：
 
 ```js
 count.peek();
 ```
 
-Use cases:
+适用场景：
 
-- Button counters, toggle states, current tab, selected item id.
-- Simple values that don't need deep field reactivity.
+- 按钮计数、开关状态、当前 tab、选中项 id。
+- 不需要深层字段响应的简单值。
 
 ### createEffect
 
@@ -141,7 +141,7 @@ const effect = createEffect(fn, options?)
 effect.dispose()
 ```
 
-When dependencies read within the effect change, the effect will re-run.
+当 effect 内读取的依赖变化时，effect 会重新运行。
 
 ```js
 const [name, setName] = createSignal('JUI');
@@ -151,7 +151,7 @@ createEffect(() => {
 });
 ```
 
-Clean up previous run:
+清理上一次运行：
 
 ```js
 createEffect(() => {
@@ -163,23 +163,23 @@ createEffect(() => {
 });
 ```
 
-Options:
+选项：
 
 ```js
 createEffect(fn, {
-  defer: true, // Defer to scheduler queue
-  priority: 10, // Higher number means higher priority
+  defer: true, // 延迟到调度队列运行
+  priority: 10, // 数字越大优先级越高
 });
 ```
 
-Notes:
+注意：
 
-- Don't unconditionally write to signals you depend on within an effect, as this may cause infinite loops.
-- DOM bindings, event subscriptions, and third-party component instantiation are suitable for effects/roots.
+- effect 内不要无条件写入自己依赖的 signal，否则可能形成循环更新。
+- DOM 绑定、事件订阅、第三方组件实例化适合放在 effect/root 中。
 
 ### createComputed
 
-`createComputed(fn, options?)` is an alias for `createEffect`. Used to express "derived side effects" with better semantic readability.
+`createComputed(fn, options?)` 是 `createEffect` 的别名。用于表达“派生副作用”，语义上可读性更强。
 
 ```js
 createComputed(() => {
@@ -193,7 +193,7 @@ createComputed(() => {
 const memo = createMemo(fn, initial?, options?)
 ```
 
-Used to cache derived values. Only notifies downstream when dependencies change and the calculated result changes.
+用于缓存派生值。只有依赖变化且计算结果变化时，才通知下游。
 
 ```js
 const [price, setPrice] = createSignal(100);
@@ -204,7 +204,7 @@ const total = createMemo(() => price() * count());
 console.log(total()); // 200
 ```
 
-Custom equality check:
+自定义相等判断：
 
 ```js
 const userName = createMemo(() => user().name.trim(), '', {
@@ -212,16 +212,16 @@ const userName = createMemo(() => user().name.trim(), '', {
 });
 ```
 
-Dispose memo:
+释放 memo：
 
 ```js
 total.dispose();
 ```
 
-Use cases:
+适用场景：
 
-- Total inventory, filtered results, total amount, formatted UI text.
-- Any value that can be derived from existing state.
+- 总库存、筛选结果、总金额、格式化后的 UI 文案。
+- 任何可由已有状态推导出的值。
 
 ### createWatch
 
@@ -229,7 +229,7 @@ Use cases:
 createWatch(source, callback, options?)
 ```
 
-Listens for changes in one or more sources, suitable for executing "actions after change".
+监听一个或多个 source 的变化，适合执行“变化后动作”。
 
 ```js
 const [keyword, setKeyword] = createSignal('');
@@ -243,7 +243,7 @@ createWatch(
 );
 ```
 
-Listen to multiple sources:
+监听多个 source：
 
 ```js
 createWatch(
@@ -255,10 +255,10 @@ createWatch(
 );
 ```
 
-Notes:
+注意：
 
-- `defer: true` means the callback is not called initially, only on subsequent changes.
-- The callback executes with `untrack` by default and won't additionally subscribe to signals read within the callback.
+- `defer: true` 表示首次不调用 callback，只在后续变化时调用。
+- callback 内部默认使用 `untrack` 执行，不会额外订阅 callback 里读取的 signal。
 
 ### createSelector
 
@@ -266,7 +266,7 @@ Notes:
 const isSelected = createSelector(selectedId);
 ```
 
-Used for list selection state determination:
+用于列表选中态判断：
 
 ```js
 const [selectedId, setSelectedId] = createSignal('a');
@@ -283,7 +283,7 @@ jsx`
 access(value);
 ```
 
-If `value` is a function, call it; otherwise return the original value. Commonly used in APIs that accept "plain values or accessors".
+如果 `value` 是函数，则调用它；否则返回原值。常用于接受“普通值或 accessor”的 API。
 
 ```js
 function toText(value) {
@@ -291,7 +291,7 @@ function toText(value) {
 }
 ```
 
-## Scheduler API
+## 调度 API
 
 ### batch
 
@@ -303,13 +303,13 @@ batch(() => {
 });
 ```
 
-Batch update dependencies to avoid triggering effects on every write.
+批量更新依赖，避免每次写入都触发 effect。
 
-Use cases:
+适用场景：
 
-- Batch form resets.
-- Batch modification of SKU prices or inventory.
-- Multiple signal/store fields must be updated as a single transaction.
+- 表单批量重置。
+- 批量修改 SKU 价格或库存。
+- 多个 signal/store 字段必须作为一次事务更新。
 
 ### untrack
 
@@ -320,12 +320,12 @@ createEffect(() => {
 });
 ```
 
-Read values without establishing dependencies.
+读取值但不建立依赖。
 
-Use cases:
+适用场景：
 
-- Reading auxiliary state in effects without wanting it to trigger effect re-runs.
-- Writing logs, reading caches, reading previous snapshots.
+- effect 中读取辅助状态，但不希望它触发 effect 重跑。
+- 写日志、读取缓存、读取上一次快照。
 
 ### flushSync
 
@@ -335,7 +335,7 @@ flushSync(() => {
 });
 ```
 
-Synchronously flush scheduled effects. Suitable for rare scenarios where you need to immediately read DOM results.
+同步刷新已调度 effect。适合需要立即读取 DOM 结果的少数场景。
 
 ```js
 flushSync(() => setOpen(true));
@@ -350,9 +350,9 @@ startTransition(() => {
 });
 ```
 
-Put updates into a low-priority queue. Suitable for search, filtering, large list refreshes, and other tasks that don't need to immediately block current interactions.
+将更新放入低优先级队列。适合搜索、筛选、大列表刷新等不需要立即阻塞当前交互的任务。
 
-## Lifecycle
+## 生命周期
 
 ### createRoot
 
@@ -368,9 +368,9 @@ const dispose = createRoot((dispose) => {
 dispose();
 ```
 
-`createRoot` creates a reactive root. The return value is determined by the callback; if the callback has no return value, it returns `{ dispose, run }`.
+`createRoot` 创建一个响应式根。返回值由 callback 决定；如果 callback 没有返回值，则返回 `{ dispose, run }`。
 
-Recommended to create roots at the entry points of page sections, modal content, or component instances.
+推荐在一个页面区域、弹窗内容、组件实例的入口处创建 root。
 
 ### createScope
 
@@ -383,7 +383,7 @@ scope.dispose();
 scope.run(() => {});
 ```
 
-`createScope` is similar to `createRoot` but always returns a scope object, suitable for internal tool management.
+`createScope` 和 `createRoot` 类似，但固定返回 scope 对象，适合工具层内部管理。
 
 ### onCleanup / onDispose
 
@@ -395,7 +395,7 @@ createEffect(() => {
 });
 ```
 
-`onDispose` is an alias for `onCleanup`.
+`onDispose` 是 `onCleanup` 的别名。
 
 ### onMount
 
@@ -407,7 +407,7 @@ createRoot(() => {
 });
 ```
 
-Runs in a microtask after the current owner is created. Suitable for initialization logic that depends on DOM being inserted.
+在当前 owner 创建后的微任务中运行。适合初始化依赖 DOM 已插入后的逻辑。
 
 ### getOwner
 
@@ -415,9 +415,9 @@ Runs in a microtask after the current owner is created. Suitable for initializat
 const owner = getOwner();
 ```
 
-Returns the current owner. Mainly used for low-level tools and debugging; business code generally doesn't need to use it directly.
+返回当前 owner。主要用于底层工具和调试，业务代码一般不需要直接使用。
 
-## Error Handling
+## 错误处理
 
 ### createErrorBoundary
 
@@ -435,15 +435,15 @@ createEffect(() => {
 });
 ```
 
-Returns:
+返回：
 
 ```js
 {
   error,      // signal accessor
-  fallback,   // passed-in fallback
+  fallback,   // 传入的 fallback
   hasError,   // () => boolean
-  reset,      // rebuild boundary
-  dispose,    // destroy boundary
+  reset,      // 重建 boundary
+  dispose,    // 销毁 boundary
 }
 ```
 
@@ -456,7 +456,7 @@ const result = catchError(
 );
 ```
 
-Used for safe execution of synchronous functions.
+用于同步函数的安全执行。
 
 ## Store
 
@@ -475,15 +475,15 @@ createEffect(() => {
 user.name = 'Bob';
 ```
 
-`createStore` is shallow reactive:
+`createStore` 是浅层响应式：
 
-- Changes to `user.name` will trigger.
-- `user.profile.city = 'Shanghai'` won't trigger effects reading `user.profile.city` because `profile` doesn't have deep proxying.
+- `user.name` 变化会触发。
+- `user.profile.city = 'Shanghai'` 不会触发读取 `user.profile.city` 的 effect，因为 `profile` 没有深层代理。
 
-Use cases:
+适用场景：
 
-- Flat objects.
-- Configuration or form states that only need to track first-level fields.
+- 扁平对象。
+- 只需要跟踪一级字段的配置、表单状态。
 
 ### createDeepStore
 
@@ -503,9 +503,9 @@ createEffect(() => {
 state.user.profile.city = 'Shanghai';
 ```
 
-`createDeepStore` recursively proxies plain objects and arrays, suitable for complex UI state.
+`createDeepStore` 会递归代理普通对象和数组，适合复杂 UI 状态。
 
-#### SKU Inventory Table Example
+#### SKU 库存表示例
 
 ```js
 const skuState = createDeepStore({
@@ -538,17 +538,17 @@ skuState.rows.push({
 skuState.rows.sort((a, b) => a.stock - b.stock);
 ```
 
-Array support:
+数组支持：
 
-- Index reading: `rows[0]`
-- Length reading: `rows.length`
-- Iteration reading: `map`, `filter`, `reduce`, `for...of`
-- Mutation methods: `push`, `pop`, `shift`, `unshift`, `splice`, `sort`, `reverse`, `fill`, `copyWithin`
+- 索引读取：`rows[0]`
+- 长度读取：`rows.length`
+- 迭代读取：`map`, `filter`, `reduce`, `for...of`
+- 变异方法：`push`, `pop`, `shift`, `unshift`, `splice`, `sort`, `reverse`, `fill`, `copyWithin`
 
-Notes:
+注意：
 
-- Deep proxying mainly supports plain objects and arrays.
-- `Date`, `Map`, `Set`, class instances are not deeply proxied; recommend using them as plain values or converting to plain object/array.
+- 深层代理主要支持普通对象和数组。
+- `Date`, `Map`, `Set`, class 实例不会被深层代理；建议将它们作为普通值使用，或转换为 plain object/array。
 
 ### createReadonly
 
@@ -556,12 +556,12 @@ Notes:
 const readonlyState = createReadonly(state);
 ```
 
-Creates a readonly deep store. Writes will be ignored and warnings will be output.
+创建只读 deep store。写入会被忽略并输出警告。
 
-Use cases:
+适用场景：
 
-- Exposing public state to external modules without allowing external modifications.
-- Component props readonly.
+- 暴露公共状态给外部模块，但不允许外部修改。
+- 组件 props 只读化。
 
 ### produce
 
@@ -572,7 +572,7 @@ produce(state, (draft) => {
 });
 ```
 
-Executes multiple modifications in a single `batch`. This is not Immer; it doesn't generate immutable copies but directly modifies the passed store.
+在一次 `batch` 中执行多次修改。这里不是 Immer，不会生成不可变副本，而是直接修改传入 store。
 
 ### unwrap / snapshot
 
@@ -581,15 +581,15 @@ const raw = unwrap(state);
 const copy = snapshot(state);
 ```
 
-Converts store/proxy to plain objects. `snapshot` is currently equivalent to `unwrap`.
+将 store/proxy 转为普通对象。`snapshot` 当前等同于 `unwrap`。
 
-Use cases:
+适用场景：
 
-- Serialization before API submission.
-- Debug output.
-- Saving current state.
+- 提交接口前序列化。
+- 调试输出。
+- 保存当前状态。
 
-## Async Data
+## 异步数据
 
 ### createResource
 
@@ -597,7 +597,7 @@ Use cases:
 const [data, controls] = createResource(fetcher, options?)
 ```
 
-Or:
+或：
 
 ```js
 const [id, setId] = createSignal(1);
@@ -611,7 +611,7 @@ const [data, { state, reload, refetch, mutate }] = createResource(
 );
 ```
 
-`state` fields:
+`state` 字段：
 
 ```js
 state.data;
@@ -621,25 +621,25 @@ state.error;
 state.isStale;
 ```
 
-Control methods:
+控制方法：
 
-- `reload(value?)`: Manually reload, will enter loading state.
-- `refetch(value?)`: Re-request, keeps stale state when data already exists.
-- `mutate(value | updater)`: Local modification of data.
+- `reload(value?)`：手动重新加载，会进入 loading。
+- `refetch(value?)`：重新请求，已有数据时保留 stale 状态。
+- `mutate(value | updater)`：本地修改 data。
 
-Options:
+选项：
 
 ```js
 createResource(fetcher, {
-  source, // accessor, automatically requests when changed
-  initialValue, // initial data
-  loadingDelay, // delay showing loading to reduce flickering
-  suspense, // throws promise when read() during loading without data
-  throwErrors, // throws error when read()
+  source, // accessor，变化后自动请求
+  initialValue, // 初始数据
+  loadingDelay, // 延迟显示 loading，减少闪烁
+  suspense, // loading 且无 data 时 read() 抛 promise
+  throwErrors, // read() 时抛出 error
 });
 ```
 
-Example: With loading UI
+示例：带 loading UI
 
 ```js
 const [user, { state, reload }] = createResource(async () => {
@@ -664,7 +664,7 @@ render(
 
 ### createQuery
 
-`createQuery` is a more business-oriented request API with built-in status, loading, error, retry/refetch states, suitable for lists, details, dashboard cards, and other async sections.
+`createQuery` 是更偏业务 UI 的请求 API，内置 status、loading、error、retry/refetch 状态，适合列表、详情、仪表盘卡片等异步区域。
 
 ```js
 const query = createQuery({
@@ -683,7 +683,7 @@ const query = createQuery({
 });
 ```
 
-Reading data:
+读取数据：
 
 ```js
 query();
@@ -697,7 +697,7 @@ query.state.failureCount;
 query.state.updatedAt;
 ```
 
-Control methods:
+控制方法：
 
 ```js
 query.refetch();
@@ -705,7 +705,7 @@ query.retry();
 query.promise();
 ```
 
-#### Loading / Skeleton / Retry Example
+#### Loading / 骨架屏 / 重试示例
 
 ```js
 const products = createQuery({
@@ -726,8 +726,8 @@ render(
         : products.state.isError
           ? jsx`
           <div class="error">
-            ${() => products.state.error?.message || 'Request failed'}
-            <button onClick=${() => products.retry()}>Retry</button>
+            ${() => products.state.error?.message || '请求失败'}
+            <button onClick=${() => products.retry()}>重试</button>
           </div>
         `
           : jsx`
@@ -745,16 +745,16 @@ render(
 );
 ```
 
-Options:
+选项：
 
 ```js
 createQuery({
-  queryKey, // plain value or accessor; changes trigger re-request
+  queryKey, // 普通值或 accessor；变化会重新请求
   queryFn, // ({ queryKey, signal, attempt }) => Promise<data>
-  enabled: true, // plain value or accessor; doesn't auto-request when false
-  initialData, // initial data
+  enabled: true, // 普通值或 accessor；false 时不自动请求
+  initialData, // 初始数据
   keepPreviousData: true,
-  retry: 0, // number or (attempt, error) => boolean
+  retry: 0, // 数字或 (attempt, error) => boolean
   retryDelay: (attempt) => Math.min(1000 * attempt, 3000),
 });
 ```
@@ -765,7 +765,7 @@ createQuery({
 const content = createSuspense(() => resource(), jsx`<div>Loading...</div>`);
 ```
 
-Captures Promises thrown in functions, returns fallback, and triggers recalculation after Promise completion. Suitable for advanced scenarios with `createResource({ suspense: true })`.
+捕获函数中抛出的 Promise，返回 fallback，并在 Promise 完成后触发重新计算。适合配合 `createResource({ suspense: true })` 的高级场景。
 
 ## DOM API
 
@@ -782,7 +782,7 @@ const dispose = render(
 dispose();
 ```
 
-Clears container and inserts value into it. Returns root dispose.
+清空 container，并把 value 插入其中。返回 root dispose。
 
 ### insert
 
@@ -791,7 +791,7 @@ const cleanup = insert(parent, () => count());
 cleanup();
 ```
 
-Inserts plain values, DOM Nodes, arrays, or accessors into parent. Automatically replaces content when accessor updates.
+将普通值、DOM Node、数组、accessor 插入 parent。accessor 更新时自动替换内容。
 
 ### bindText
 
@@ -799,7 +799,7 @@ Inserts plain values, DOM Nodes, arrays, or accessors into parent. Automatically
 bindText(el, () => `Hello ${name()}`);
 ```
 
-Binds `textContent`.
+绑定 `textContent`。
 
 ### bindAttr
 
@@ -808,7 +808,7 @@ bindAttr(input, 'disabled', () => loading());
 bindAttr(link, 'href', () => state.url);
 ```
 
-`null`, `undefined`, `false` will remove the attribute; `true` will set an empty attribute.
+`null`, `undefined`, `false` 会移除属性；`true` 会设置空属性。
 
 ### bindStyle
 
@@ -833,7 +833,7 @@ bindClass(el, 'is-active', () => selected());
 bindShow(panel, () => state.open);
 ```
 
-Controls show/hide via `display: none`.
+通过 `display: none` 控制显示隐藏。
 
 ### bindIf
 
@@ -848,7 +848,7 @@ bindIf(
 );
 ```
 
-Inserts nodes returned by factory when condition is true; removes when false.
+条件为 true 时插入 factory 返回的节点；false 时移除。
 
 ### bindList
 
@@ -867,26 +867,26 @@ bindList(
   `,
   {
     key: (row) => row.id,
-    fallback: jsx`<tr><td>No data</td></tr>`,
+    fallback: jsx`<tr><td>暂无数据</td></tr>`,
   }
 );
 ```
 
-Parameters:
+参数：
 
-- `anchor`: List insertion position, must already be in DOM.
-- `listSignal`: Array or accessor returning array.
-- `renderItem(item, indexAccessor, itemAccessor)`: Creates list item nodes.
-- `options.key`: Generates stable keys. Strongly recommended for object lists.
-- `options.fallback`: Content displayed when list is empty.
+- `anchor`：列表插入位置，必须已经在 DOM 中。
+- `listSignal`：数组或返回数组的 accessor。
+- `renderItem(item, indexAccessor, itemAccessor)`：创建列表项节点。
+- `options.key`：生成稳定 key。对象列表强烈建议提供。
+- `options.fallback`：空列表时显示内容。
 
-Notes:
+注意：
 
-- Lists with stable ids must use `key`.
-- If defaulting to index-based node reuse, list item content needs to be read via `itemAccessor()` to update with position data.
-- `bindList` reuses old nodes and moves DOM, suitable for sorting, insertion, deletion.
+- 有稳定 id 的列表必须使用 `key`。
+- 如果默认按 index 复用节点，列表项内容需要通过 `itemAccessor()` 读取才能随同位置数据更新。
+- `bindList` 会复用旧节点并移动 DOM，适合排序、插入、删除。
 
-Helper keys:
+辅助 key：
 
 ```js
 bindList(anchor, rows, render, {
@@ -900,9 +900,9 @@ bindList(anchor, rows, render, {
 
 ## JSX Runtime
 
-### Without Build: jsx tagged template
+### 无构建：jsx tagged template
 
-Browsers cannot directly parse `<div />` JSX syntax. Use `jsx\`...\`` in no-build scenarios:
+浏览器不能直接解析 `<div />` 这种 JSX 语法。无构建场景应使用 `jsx\`...\``：
 
 ```js
 const [count, setCount] = createSignal(0);
@@ -920,13 +920,13 @@ render(
 );
 ```
 
-Dynamic rules:
+动态规则：
 
-- Child node interpolations can be strings, numbers, DOM Nodes, arrays, or accessors.
-- Attribute interpolations can be plain values or accessors.
-- Events use `onClick`, `onInput`, etc. properties.
-- Both `class` and `className` are available.
-- `style` can accept strings or objects.
+- 子节点插值可以是字符串、数字、DOM Node、数组、accessor。
+- 属性插值可以是普通值或 accessor。
+- 事件使用 `onClick`, `onInput` 等属性。
+- `class` 和 `className` 都可用。
+- `style` 可传字符串或对象。
 
 ```js
 jsx`
@@ -939,29 +939,29 @@ jsx`
 `;
 ```
 
-### With Build: JSX runtime
+### 有构建：JSX runtime
 
-If your project integrates Babel/Vite JSX transformation, you can configure to use this runtime:
+如果项目接入 Babel/Vite JSX 转换，可配置使用本 runtime：
 
 ```js
-// automatic runtime requires build tools to transform JSX into jsx/jsxs calls
-// importSource points to signal.js export location, configure according to actual project path
+// automatic runtime 需要构建器把 JSX 转成 jsx/jsxs 调用
+// importSource 指向 signal.js 的导出位置，按项目实际路径配置
 ```
 
-After compilation, equivalent to:
+编译后等价于：
 
 ```js
 jsx('div', { children: 'test' });
 ```
 
-Notes:
+注意：
 
-- `jsx(<div>test</div>)` is not valid browser JavaScript; must be transformed by JSX compiler before running.
-- JUI's no-build syntax is `jsx\`<div>test</div>\``.
+- `jsx(<div>test</div>)` 不是合法浏览器 JavaScript，必须经过 JSX 编译器转换后才可运行。
+- JUI 的无构建写法是 `jsx\`<div>test</div>\``。
 
 ### h / createElement
 
-`h` is a factory function for manual writing or after JSX compilation:
+`h` 是手写或 JSX 编译后的工厂函数：
 
 ```js
 const node = h(
@@ -974,7 +974,7 @@ const node = h(
 );
 ```
 
-`createElement` is an alias for `h`.
+`createElement` 是 `h` 的别名。
 
 ### Fragment
 
@@ -984,7 +984,7 @@ Fragment({
 });
 ```
 
-Usually used by JSX compilers.
+通常由 JSX 编译器使用。
 
 ### Show
 
@@ -993,18 +993,18 @@ insert(
   container,
   Show({
     when: () => state.visible,
-    fallback: jsx`<span>Hidden</span>`,
-    children: jsx`<strong>Visible</strong>`,
+    fallback: jsx`<span>隐藏</span>`,
+    children: jsx`<strong>显示</strong>`,
   })
 );
 ```
 
-Can also pass function children:
+也可传函数 children：
 
 ```js
 Show({
   when: user,
-  fallback: jsx`<span>Not logged in</span>`,
+  fallback: jsx`<span>未登录</span>`,
   children: (currentUser) => jsx`<span>${currentUser.name}</span>`,
 });
 ```
@@ -1027,17 +1027,17 @@ insert(
 );
 ```
 
-`For`'s `children` receives:
+`For` 的 `children` 接收：
 
-- `item`: Current item accessor, needs to be read with `item()`.
-- `index`: Current index accessor, needs to be read with `index()`.
+- `item`：当前项 accessor，需要用 `item()` 读取。
+- `index`：当前索引 accessor，需要用 `index()` 读取。
 
-Why item is an accessor:
+为什么 item 是 accessor：
 
-- When defaulting to index-based node reuse, the item corresponding to the same DOM node may change.
-- Reading via `item()` allows node content to update with list changes.
+- 默认按 index 复用节点时，同一个 DOM 节点对应的 item 可能变化。
+- 通过 `item()` 读取，节点内容才能随列表更新。
 
-Simple string arrays:
+简单字符串数组：
 
 ```js
 const [items, setItems] = createSignal(['one', 'two']);
@@ -1053,9 +1053,9 @@ insert(
 setItems(['two', 'three']);
 ```
 
-In the example above, `${item}` is treated as an accessor by `jsx`.
+上例中 `${item}` 会被 `jsx` 当 accessor 处理。
 
-Object arrays should provide keys:
+对象数组建议提供 key：
 
 ```js
 For({
@@ -1067,9 +1067,9 @@ For({
 });
 ```
 
-## Common Business Scenarios
+## 常见业务场景
 
-### 1. Modal Internal Reactive Form
+### 1. Modal 内部响应式表单
 
 ```js
 function mountModalContent(container) {
@@ -1089,14 +1089,14 @@ function mountModalContent(container) {
         <input type="number" value=${() => form.count} onInput=${(e) => {
           form.count = Number(e.currentTarget.value);
         }}>
-        <button disabled=${() => !canSubmit()}>Submit</button>
+        <button disabled=${() => !canSubmit()}>提交</button>
       </form>
     `;
   }, container);
 }
 ```
 
-### 2. Toast Queue
+### 2. Toast 队列
 
 ```js
 const toasts = createDeepStore([]);
@@ -1126,7 +1126,7 @@ render(
 );
 ```
 
-### 3. SKU Inventory Table
+### 3. SKU 库存表
 
 ```js
 const state = createDeepStore({
@@ -1143,7 +1143,7 @@ const totalStock = createMemo(() => {
 render(
   () => jsx`
   <section>
-    <strong>${() => `Total Stock: ${totalStock()}`}</strong>
+    <strong>${() => `总库存：${totalStock()}`}</strong>
     <table>
       <tbody>
         ${For({
@@ -1160,7 +1160,7 @@ render(
                   row().stock = Number(e.currentTarget.value);
                 }}>
               </td>
-              <td>${() => (row().stock < 5 ? 'Low Stock' : 'Normal')}</td>
+              <td>${() => (row().stock < 5 ? '低库存' : '正常')}</td>
             </tr>
           `,
         })}
@@ -1172,7 +1172,7 @@ render(
 );
 ```
 
-### 4. Search List
+### 4. 搜索列表
 
 ```js
 const state = createDeepStore({
@@ -1199,9 +1199,9 @@ render(
 
     ${() =>
       result.state.isLoading
-        ? jsx`<div>Searching...</div>`
+        ? jsx`<div>搜索中...</div>`
         : result.state.isError
-          ? jsx`<button onClick=${() => result.retry()}>Retry</button>`
+          ? jsx`<button onClick=${() => result.retry()}>重试</button>`
           : For({
               each: () => result() || [],
               key: (item) => item.id,
@@ -1213,32 +1213,32 @@ render(
 );
 ```
 
-## Performance Recommendations
+## 性能建议
 
-- Prefer using `createMemo` to express derived values; don't duplicate derivable state into multiple signals.
-- Use `batch` or `produce` when batch modifying stores.
-- Large lists must provide stable `key` to avoid content misalignment from index-based reuse.
-- Read `item()` and `index()` inside list items; don't treat the creation-time item as an eternally unchanged value.
-- Only read dependencies that truly need to trigger re-runs in effects; use `untrack` for other reads.
-- `createDeepStore` is suitable for UI state; large static data can remain as plain objects, making only filter conditions, selected items, and editable fields reactive.
+- 优先用 `createMemo` 表达派生值，不要把可推导状态重复存到多个 signal。
+- 批量修改 store 时使用 `batch` 或 `produce`。
+- 大列表必须提供稳定 `key`，避免按 index 复用带来的内容错位。
+- 列表项内部读取 `item()` 和 `index()`，不要把创建时的 item 当成永远不变的值。
+- effect 中只读取真正需要触发重跑的依赖；其他读取用 `untrack`。
+- `createDeepStore` 适合 UI 状态；大型静态数据可保持普通对象，只把筛选条件、选中项、可编辑字段响应式化。
 
-## Debugging Recommendations
+## 调试建议
 
-- Signal accessors have `peek()` for non-tracking current value reads.
-- Stores can use `snapshot(store)` to output plain objects.
-- You can set `window.__SIGNAL_DEVTOOLS__ = { emit(type, payload) {} }` in the browser to receive runtime events.
-- If encountering effect loops, check whether the effect writes to signals/stores it reads.
+- signal accessor 有 `peek()`，可不追踪读取当前值。
+- store 可用 `snapshot(store)` 输出普通对象。
+- 可以在浏览器设置 `window.__SIGNAL_DEVTOOLS__ = { emit(type, payload) {} }` 接收运行时事件。
+- 遇到 effect 循环，检查 effect 内是否写入了自己读取的 signal/store。
 
-## Limitations and Conventions
+## 限制与约定
 
-- No-build scenarios don't support browsers directly parsing `<div />` JSX syntax; please use `` jsx `...` ``.
-- `jsx(<div />)` must rely on build tools to transform JSX into function calls; native browsers cannot execute it.
-- Deep store only recursively proxies plain objects and arrays; `Map`, `Set`, `Date`, class instances are treated as plain values.
-- `bindList`'s anchor must already be in DOM.
-- Async request APIs handle "latest request priority"; expired requests won't override new data.
-- `createQuery` initial auto-request failures swallow unhandled Promise rejections, but errors are saved in `query.state.error`; manually returned Promises from `retry/refetch` can still be `await/catch` by callers.
+- 无构建场景不支持浏览器直接解析 `<div />` JSX 语法，请使用 `` jsx `...` ``。
+- `jsx(<div />)` 必须依赖构建器把 JSX 转换成函数调用；原生浏览器无法执行。
+- deep store 只递归普通对象和数组；`Map`, `Set`, `Date`, class 实例按普通值处理。
+- `bindList` 的 anchor 必须已在 DOM 中。
+- 异步请求 API 会处理“最新请求优先”，过期请求不会覆盖新数据。
+- `createQuery` 初始自动请求失败会吞掉未处理 Promise rejection，但错误会保存在 `query.state.error` 中；手动 `retry/refetch` 返回的 Promise 仍可由调用方 `await/catch`。
 
-## API Quick Reference
+## API 速查
 
 ```js
 // Core

@@ -1,42 +1,42 @@
 # Signal
 
-`signal.js` 是细粒度响应式运行时，设计目标是接近 SolidJS 的心智模型，同时保持“无依赖、无构建也能直接在浏览器中使用”。它适合用原生 JS 编写中小型 UI、表单、列表、库存表、弹窗内容、异步数据区块等交互。
+`signal.js` is a fine-grained reactive runtime, designed to closely match the SolidJS mental model while maintaining "zero dependencies and no build step required for direct browser usage". It's suitable for building small to medium-sized UIs, forms, lists, inventory tables, modal content, async data sections, and other interactions using vanilla JavaScript.
 
-## 设计目标
+## Design Goals
 
-- 细粒度更新：读了哪个 signal/store 字段，就只在该字段变化时更新对应 effect 或 DOM。
-- 无框架依赖：不依赖 React/Vue/Solid，也不要求构建工具。
-- 支持复杂 UI 状态：支持深层对象、数组、排序、插入、删除、派生状态和异步请求。
-- 支持 JSX 使用体验：无构建环境使用 `` jsx `...` `` 模板；有构建环境可接入 JSX runtime。
-- 可维护：业务代码以 state、memo、effect、DOM binding 分层组织。
+- Fine-grained updates: Only the effects or DOM elements that read a specific signal/store field will update when that field changes.
+- No framework dependencies: Doesn't rely on React/Vue/Solid, and doesn't require build tools.
+- Supports complex UI state: Handles deep objects, arrays, sorting, insertion, deletion, derived state, and async requests.
+- Supports JSX experience: Uses `` jsx `...` `` template literals in environments without builds; can integrate with JSX runtime in build environments.
+- Maintainable: Business code is organized in layers of state, memo, effect, and DOM binding.
 
-## 打包结果
+## Build Outputs
 
-- `signal.mjs`：ES Module，适合现代浏览器和构建工具。
-- `signal.umd.js`：UMD 模块，适合直接在浏览器中通过 `<script>` 引入。GlobalName: `signal`。
+- `signal.mjs`: ES Module, suitable for modern browsers and build tools.
+- `signal.umd.js`: UMD module, suitable for direct inclusion in browsers via `<script>` tag. GlobalName: `signal`.
 
-## 使用文档
+## Documentation
 
-- [文档](./docs/signal.md)
+- [Documentation](./docs/signal.md)
 
-## 基本概念
+## Basic Concepts
 
 ### Accessor
 
-Signal 的读取函数称为 accessor：
+The read function of a signal is called an accessor:
 
 ```js
 const [count, setCount] = createSignal(0);
 
-count(); // 读取当前值
-setCount(1); // 更新
+count(); // Read current value
+setCount(1); // Update
 ```
 
-在 `createEffect`、`createMemo`、`insert`、`jsx` 动态插值等响应式上下文中读取 accessor，会自动建立依赖。
+Reading an accessor within reactive contexts like `createEffect`, `createMemo`, `insert`, or `jsx` dynamic interpolations automatically establishes dependencies.
 
-### Owner 与清理
+### Owner and Cleanup
 
-`createRoot`、`createScope`、`createEffect`、列表项 root 都会形成 owner 树。`onCleanup` 注册的清理函数会在 effect 重跑或 owner 销毁时执行。
+`createRoot`, `createScope`, `createEffect`, and list item roots all form an owner tree. Cleanup functions registered with `onCleanup` execute when effects re-run or owners are disposed.
 
 ```js
 const dispose = createRoot((dispose) => {
@@ -48,7 +48,7 @@ const dispose = createRoot((dispose) => {
 dispose();
 ```
 
-### 推荐组织方式
+### Recommended Organization
 
 ```js
 const state = createDeepStore({
@@ -77,16 +77,16 @@ render(
 );
 ```
 
-## API 总览
+## API Overview
 
-| 分类        | API                                                                                                       |
-| ----------- | --------------------------------------------------------------------------------------------------------- |
-| 核心响应式  | `createSignal`, `createEffect`, `createComputed`, `createMemo`, `createWatch`, `createSelector`, `access` |
-| 调度        | `batch`, `untrack`, `flushSync`, `startTransition`                                                        |
-| 生命周期    | `createRoot`, `createScope`, `onCleanup`, `onDispose`, `onMount`, `getOwner`                              |
-| 错误处理    | `createErrorBoundary`, `catchError`                                                                       |
-| Store       | `createStore`, `createDeepStore`, `createReadonly`, `produce`, `unwrap`, `snapshot`                       |
-| 异步        | `createResource`, `createQuery`, `createSuspense`                                                         |
-| DOM         | `insert`, `render`, `bindText`, `bindAttr`, `bindStyle`, `bindClass`, `bindShow`, `bindIf`, `bindList`    |
-| 列表辅助    | `createListKey`, `createCompositeKey`, `For`, `Show`                                                      |
-| JSX Runtime | `jsx`, `jsxs`, `jsxDEV`, `h`, `createElement`, `Fragment`                                                 |
+| Category       | API                                                                                                       |
+| -------------- | --------------------------------------------------------------------------------------------------------- |
+| Core Reactive  | `createSignal`, `createEffect`, `createComputed`, `createMemo`, `createWatch`, `createSelector`, `access` |
+| Scheduling     | `batch`, `untrack`, `flushSync`, `startTransition`                                                        |
+| Lifecycle      | `createRoot`, `createScope`, `onCleanup`, `onDispose`, `onMount`, `getOwner`                              |
+| Error Handling | `createErrorBoundary`, `catchError`                                                                       |
+| Store          | `createStore`, `createDeepStore`, `createReadonly`, `produce`, `unwrap`, `snapshot`                       |
+| Async          | `createResource`, `createQuery`, `createSuspense`                                                         |
+| DOM            | `insert`, `render`, `bindText`, `bindAttr`, `bindStyle`, `bindClass`, `bindShow`, `bindIf`, `bindList`    |
+| List Helpers   | `createListKey`, `createCompositeKey`, `For`, `Show`                                                      |
+| JSX Runtime    | `jsx`, `jsxs`, `jsxDEV`, `h`, `createElement`, `Fragment`                                                 |
