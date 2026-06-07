@@ -17,7 +17,7 @@
 
 ## 使用文档
 
-[使用文档](./docs/signal.md)
+- [文档](./docs/signal.md)
 
 ## 基本概念
 
