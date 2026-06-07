@@ -18,7 +18,7 @@ export default defineConfig({
     dts: {
       tsgo: true,
     },
-    sourcemap: true,
+    // sourcemap: true,
     exports: true,
   },
 
