@@ -1,6 +1,6 @@
 # Signal
 
-`signal.js` is a fine-grained reactive runtime, designed to closely match the SolidJS mental model while maintaining "zero dependencies and no build step required for direct browser usage". It's suitable for building small to medium-sized UIs, forms, lists, inventory tables, modal content, async data sections, and other interactions using vanilla JavaScript.
+`Signal` is a fine-grained reactive runtime, designed to closely match the SolidJS mental model while maintaining "zero dependencies and no build step required for direct browser usage". It's suitable for building small to medium-sized UIs, forms, lists, inventory tables, modal content, async data sections, and other interactions using vanilla JavaScript.
 
 ## Design Goals
 
@@ -10,10 +10,28 @@
 - Supports JSX experience: Uses `` jsx `...` `` template literals in environments without builds; can integrate with JSX runtime in build environments.
 - Maintainable: Business code is organized in layers of state, memo, effect, and DOM binding.
 
-## Build Outputs
+## Install
 
-- `signal.mjs`: ES Module, suitable for modern browsers and build tools.
-- `signal.umd.js`: UMD module, suitable for direct inclusion in browsers via `<script>` tag. GlobalName: `signal`.
+npm:
+
+```bash
+npm install vanilla-signal
+```
+
+script:
+
+```html
+<!-- umd GlobalName: signal -->
+<script src="https://unpkg.com/vanilla-signal/dist/index.umd.js"></script>
+<script>
+  const { createSignal } = signal;
+</script>
+
+<!-- es module -->
+<script type="module">
+  import { createSignal } from 'https://unpkg.com/vanilla-signal/dist/index.mjs';
+</script>
+```
 
 ## Documentation
 
@@ -90,3 +108,7 @@ render(
 | DOM            | `insert`, `render`, `bindText`, `bindAttr`, `bindStyle`, `bindClass`, `bindShow`, `bindIf`, `bindList`    |
 | List Helpers   | `createListKey`, `createCompositeKey`, `For`, `Show`                                                      |
 | JSX Runtime    | `jsx`, `jsxs`, `jsxDEV`, `h`, `createElement`, `Fragment`                                                 |
+
+## Translations
+
+- [中文](./README_zh.md)

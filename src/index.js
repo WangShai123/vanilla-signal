@@ -1,5 +1,5 @@
 /* ======================================================
- * signal.js
+ * Signal
  * A Solid-inspired reactive runtime for browser-first UI.
  *
  * Goals:

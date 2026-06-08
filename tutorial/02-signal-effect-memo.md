@@ -187,7 +187,7 @@ createEffect(() => {
 
 ```html
 <div id="app"></div>
-<script src="../dist/signal.umd.js"></script>
+<script src="../dist/index.umd.js"></script>
 <script>
   const { createSignal, createMemo, render, jsx } = signal;
 
@@ -265,4 +265,4 @@ const total = createMemo(() => price() * count());
 - `createEffect` 执行副作用。
 - `createMemo` 计算派生值。
 
-下一集我们会把这些状态真正渲染到页面上，学习 `render` 和 `jsx``...``。
+下一集我们会把这些状态真正渲染到页面上，学习 `render` 和 `jsx`...`。

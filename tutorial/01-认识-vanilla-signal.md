@@ -24,7 +24,7 @@
   <head>
     <meta charset="UTF-8" />
     <title>vanilla-signal demo</title>
-    <script src="../dist/signal.umd.js"></script>
+    <script src="../dist/index.umd.js"></script>
   </head>
   <body>
     <div id="app"></div>

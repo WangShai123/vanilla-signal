@@ -1,5 +1,5 @@
 /* ======================================================
- * signal.ts
+ * Signal
  * A typed Solid-inspired reactive runtime for browser-first UI.
  *
  * Goals:
@@ -9,7 +9,7 @@
  * - DOM helpers plus JSX factory/runtime exports for transformed JSX.
  * ====================================================== */
 
-// TypeScript 类型定义：运行时代码保持与 signal.js 同构，类型用于约束公开 API 与内部调度节点。
+// TypeScript 类型定义：运行时代码保持与 index.js 同构，类型用于约束公开 API 与内部调度节点。
 type AnyFn = (...args: any[]) => any;
 type Equality<T = any> = (previous: T, next: T) => boolean;
 export type Accessor<T = any> = (() => T) & {
@@ -196,7 +196,9 @@ function isObject(value: unknown): value is object {
  * @param {*} value - 需要检查的值
  * @returns {boolean} 如果值是可包装的则返回 true，否则返回 false
  */
-function isWrappable(value: unknown): value is Record<PropertyKey, any> | any[] {
+function isWrappable(
+  value: unknown
+): value is Record<PropertyKey, any> | any[] {
   // 非对象类型直接返回 false
   if (!isObject(value)) return false;
 
@@ -639,7 +641,10 @@ function cleanupSources(computation: Computation): void {
  * @param {Function} [options.equals=Object.is] - memo 值比较函数。
  * @returns {Object} 新创建的计算节点。
  */
-function createComputation(fn: (value: any) => any, options: ComputationOptions = {}): Computation {
+function createComputation(
+  fn: (value: any) => any,
+  options: ComputationOptions = {}
+): Computation {
   const owner = Owner;
   const computation: Computation = {
     id: ++computationId,
@@ -797,7 +802,10 @@ function runMemo(computation: Computation): any {
  * Core APIs
  * ====================== */
 
-export function createSignal<T = any>(initial: T, options: SignalOptions<T> = {}): SignalTuple<T> {
+export function createSignal<T = any>(
+  initial: T,
+  options: SignalOptions<T> = {}
+): SignalTuple<T> {
   let value = initial;
   const signal: ReactiveSource = {
     observers: new Set<Computation>(),
@@ -838,7 +846,10 @@ export function createSignal<T = any>(initial: T, options: SignalOptions<T> = {}
  * @param {number} [options.priority=0] - 调度优先级。
  * @returns {Object} 可 dispose 的计算节点。
  */
-export function createEffect(fn: (value?: any) => any, options: EffectOptions = {}): Computation {
+export function createEffect(
+  fn: (value?: any) => any,
+  options: EffectOptions = {}
+): Computation {
   const computation = createComputation(fn, {
     type: 'effect',
     priority: options.priority || 0,
@@ -862,7 +873,10 @@ export function createEffect(fn: (value?: any) => any, options: EffectOptions = 
  * @param {Object} [options={}] - 计算配置。
  * @returns {Object} 可 dispose 的计算节点。
  */
-export function createComputed(fn: (value?: any) => any, options: EffectOptions = {}): Computation {
+export function createComputed(
+  fn: (value?: any) => any,
+  options: EffectOptions = {}
+): Computation {
   return createEffect(fn, options);
 }
 
@@ -876,7 +890,11 @@ export function createComputed(fn: (value?: any) => any, options: EffectOptions 
  * @param {Object} [options={}] - memo 配置。
  * @returns {Function} memo 读取函数。
  */
-export function createMemo<T = any>(fn: (previous?: T) => T, initial?: any, options: any = {}): Accessor<T> {
+export function createMemo<T = any>(
+  fn: (previous?: T) => T,
+  initial?: any,
+  options: any = {}
+): Accessor<T> {
   if (
     initial &&
     typeof initial === 'object' &&
@@ -919,7 +937,11 @@ export function createMemo<T = any>(fn: (previous?: T) => T, initial?: any, opti
  * @param {boolean} [options.defer=false] - 是否跳过首次回调。
  * @returns {Object} 底层 effect 计算节点。
  */
-export function createWatch(source: MaybeAccessor | MaybeAccessor[], fn: (next: any, previous: any) => void, options: EffectOptions = {}): Computation {
+export function createWatch(
+  source: MaybeAccessor | MaybeAccessor[],
+  fn: (next: any, previous: any) => void,
+  options: EffectOptions = {}
+): Computation {
   const sources = Array.isArray(source) ? source : [source];
   let previous: any;
   let initialized: boolean = false;
@@ -954,7 +976,10 @@ export function createWatch(source: MaybeAccessor | MaybeAccessor[], fn: (next: 
  * @param {Function} [equals=Object.is] - key 比较函数。
  * @returns {Function} 接收 key 并返回是否匹配的函数。
  */
-export function createSelector<T = any>(source: MaybeAccessor<T>, equals: (a: any, b: any) => boolean = Object.is): (key: T) => boolean {
+export function createSelector<T = any>(
+  source: MaybeAccessor<T>,
+  equals: (a: any, b: any) => boolean = Object.is
+): (key: T) => boolean {
   const selected = createMemo(() => access(source));
   return (key) => equals(selected(), key);
 }
@@ -1077,7 +1102,13 @@ export function onMount(fn: () => void): void {
  * @param {Function} [fn] - 创建作用域后立即执行的函数。
  * @returns {Object} 包含 result、dispose 和 run 的作用域对象。
  */
-export function createScope<T = any>(fn?: () => T): { result: T | undefined; dispose: () => void; run: <R = any>(fn: () => R) => R | undefined } {
+export function createScope<T = any>(
+  fn?: () => T
+): {
+  result: T | undefined;
+  dispose: () => void;
+  run: <R = any>(fn: () => R) => R | undefined;
+} {
   const scope = createOwner(Owner, 'scope');
   const result = runWithOwner(scope, () => fn?.());
 
@@ -1113,7 +1144,16 @@ export function createRoot<T = any>(fn: (dispose: () => void) => T): any {
  * Error Boundary
  * ====================== */
 
-export function createErrorBoundary(fn: () => void, fallback?: any): { error: Accessor<any>; fallback: any; hasError: () => boolean; reset: () => void; dispose: () => void } {
+export function createErrorBoundary(
+  fn: () => void,
+  fallback?: any
+): {
+  error: Accessor<any>;
+  fallback: any;
+  hasError: () => boolean;
+  reset: () => void;
+  dispose: () => void;
+} {
   const [error, setError] = createSignal(null);
   let scope: { dispose: () => void; run: (cb: () => any) => any } | null = null;
 
@@ -1161,7 +1201,10 @@ export function createErrorBoundary(fn: () => void, fallback?: any): { error: Ac
  * @param {*|Function} fallback - 错误发生时返回的值或错误映射函数。
  * @returns {*} fn 的结果或 fallback 结果。
  */
-export function catchError<T = any>(fn: () => T, fallback: T | ((error: any) => T)): T {
+export function catchError<T = any>(
+  fn: () => T,
+  fallback: T | ((error: any) => T)
+): T {
   try {
     return fn();
   } catch (error) {
@@ -1267,7 +1310,10 @@ function unwrapShallow<T = any>(value: T): any {
  * @param {WeakMap} [seen=new WeakMap()] - 循环引用缓存。
  * @returns {*} 解包后的普通值。
  */
-export function unwrap<T = any>(value: T, seen: WeakMap<object, any> = new WeakMap()): any {
+export function unwrap<T = any>(
+  value: T,
+  seen: WeakMap<object, any> = new WeakMap()
+): any {
   const raw = unwrapShallow(value);
   if (!isObject(raw)) return raw;
   if (seen.has(raw)) return seen.get(raw);
@@ -1351,7 +1397,13 @@ function triggerArrayRange(target: any[], start: number, end: number): void {
  * @param {number} newLength - 变异后数组长度。
  * @returns {void}
  */
-function triggerArrayMutation(target: any[], method: string, args: any[], oldLength: number, newLength: number): void {
+function triggerArrayMutation(
+  target: any[],
+  method: string,
+  args: any[],
+  oldLength: number,
+  newLength: number
+): void {
   const maxLength = Math.max(oldLength, newLength);
 
   if (method === 'push') {
@@ -1381,7 +1433,12 @@ function triggerArrayMutation(target: any[], method: string, args: any[], oldLen
  * @param {boolean} readonly - 是否为只读 store。
  * @returns {Function} 包装后的数组方法。
  */
-function createArrayMethod(target: any[], receiver: any[], key: string, readonly: boolean): AnyFn {
+function createArrayMethod(
+  target: any[],
+  receiver: any[],
+  key: string,
+  readonly: boolean
+): AnyFn {
   const method = (Array.prototype as any)[key] as AnyFn;
 
   if (ARRAY_MUTATORS.has(key)) {
@@ -1546,7 +1603,9 @@ function createProxy<T = any>(target: T, deep: boolean, readonly: boolean): T {
  * @param {Object|Array} [target={}] - 初始对象或数组。
  * @returns {*} 响应式 store proxy。
  */
-export function createStore<T extends object = Record<string, any>>(target: T = {} as T): T {
+export function createStore<T extends object = Record<string, any>>(
+  target: T = {} as T
+): T {
   return createProxy(target, false, false);
 }
 
@@ -1558,7 +1617,9 @@ export function createStore<T extends object = Record<string, any>>(target: T = 
  * @param {Object|Array} [target={}] - 初始对象或数组。
  * @returns {*} 深层响应式 store proxy。
  */
-export function createDeepStore<T extends object = Record<string, any>>(target: T = {} as T): T {
+export function createDeepStore<T extends object = Record<string, any>>(
+  target: T = {} as T
+): T {
   return createProxy(target, true, false);
 }
 
@@ -1570,7 +1631,9 @@ export function createDeepStore<T extends object = Record<string, any>>(target: 
  * @param {Object|Array} [target={}] - 初始对象或数组。
  * @returns {*} 只读 store proxy。
  */
-export function createReadonly<T extends object = Record<string, any>>(target: T = {} as T): Readonly<T> {
+export function createReadonly<T extends object = Record<string, any>>(
+  target: T = {} as T
+): Readonly<T> {
   return createProxy(target, true, true) as Readonly<T>;
 }
 
@@ -1592,7 +1655,11 @@ export function produce<T>(store: T, recipe: (store: T) => void): T {
  * Resource & Suspense
  * ====================== */
 
-export function createResource<T = any>(source: any, fetcher?: any, options?: any): [ResourceAccessor<T>, ResourceControls<T>] {
+export function createResource<T = any>(
+  source: any,
+  fetcher?: any,
+  options?: any
+): [ResourceAccessor<T>, ResourceControls<T>] {
   if (typeof fetcher !== 'function') {
     options = fetcher || {};
     fetcher = source;
@@ -1810,12 +1877,17 @@ export function createQuery<T = any>(options: any): QueryAccessor<T> {
     return !!access(enabled);
   }
 
-  function waitDelay(value: number | ((attempt: number) => number), attempt: number): Promise<void> {
+  function waitDelay(
+    value: number | ((attempt: number) => number),
+    attempt: number
+  ): Promise<void> {
     const delay = typeof value === 'function' ? value(attempt) : value;
     return sleepFor(delay || 0);
   }
 
-  async function execute({ force = false }: { force?: boolean } = {}): Promise<T | undefined> {
+  async function execute({ force = false }: { force?: boolean } = {}): Promise<
+    T | undefined
+  > {
     if (!force && !getEnabled()) return state.data;
 
     const id = ++requestId;
@@ -1898,7 +1970,8 @@ export function createQuery<T = any>(options: any): QueryAccessor<T> {
   }
 
   (read as QueryAccessor<T>).state = state;
-  (read as QueryAccessor<T>).refetch = (options?: any) => execute({ ...options, force: true });
+  (read as QueryAccessor<T>).refetch = (options?: any) =>
+    execute({ ...options, force: true });
   (read as QueryAccessor<T>).retry = () => execute({ force: true });
   (read as QueryAccessor<T>).promise = () => currentPromise;
 
@@ -1929,7 +2002,10 @@ function sleepFor(ms: number): Promise<void> {
  * @param {*|Function} fallback - pending 时返回的兜底值或访问器。
  * @returns {Function} memo 读取函数。
  */
-export function createSuspense<T = any>(fn: () => T, fallback: MaybeAccessor<T>): Accessor<T> {
+export function createSuspense<T = any>(
+  fn: () => T,
+  fallback: MaybeAccessor<T>
+): Accessor<T> {
   const [version, setVersion] = createSignal(0, { equals: false });
   let pending: Promise<any> | null = null;
 
@@ -2027,7 +2103,11 @@ function removeNodes(nodes: Node[]): void {
  * @param {Node|null} [marker=null] - 插入位置标记，节点会插入在该标记前。
  * @returns {Function} 清理函数。
  */
-export function insert(parent: Node, value: any, marker: Node | null = null): () => void {
+export function insert(
+  parent: Node,
+  value: any,
+  marker: Node | null = null
+): () => void {
   let current: Node[] = [];
 
   const update = (next: any) => {
@@ -2102,7 +2182,11 @@ export function bindText(el: Element, signal: MaybeAccessor<any>): Computation {
  * @param {*|Function} signal - 属性值或访问器。
  * @returns {Object} effect 计算节点。
  */
-export function bindAttr(el: Element, name: string, signal: MaybeAccessor<any>): Computation {
+export function bindAttr(
+  el: Element,
+  name: string,
+  signal: MaybeAccessor<any>
+): Computation {
   return createEffect(() => {
     const value = access(signal);
     if (value == null || value === false) {
@@ -2125,7 +2209,11 @@ export function bindAttr(el: Element, name: string, signal: MaybeAccessor<any>):
  * @param {*|Function} signal - 单个样式值或访问器。
  * @returns {Object} effect 计算节点。
  */
-export function bindStyle(el: any, name: string | Record<string, any>, signal?: MaybeAccessor<any>): Computation {
+export function bindStyle(
+  el: any,
+  name: string | Record<string, any>,
+  signal?: MaybeAccessor<any>
+): Computation {
   if (typeof name === 'object') {
     return createEffect(() => setStyle(el, access(name)));
   }
@@ -2144,7 +2232,11 @@ export function bindStyle(el: any, name: string | Record<string, any>, signal?: 
  * @param {*|Function} signal - 布尔值或访问器。
  * @returns {Object} effect 计算节点。
  */
-export function bindClass(el: Element, name: string, signal: MaybeAccessor<any>): Computation {
+export function bindClass(
+  el: Element,
+  name: string,
+  signal: MaybeAccessor<any>
+): Computation {
   return createEffect(() => {
     el.classList.toggle(name, !!access(signal));
   });
@@ -2160,7 +2252,11 @@ export function bindClass(el: Element, name: string, signal: MaybeAccessor<any>)
  * @param {string} [display=''] - 显示时使用的 display 值。
  * @returns {Object} effect 计算节点。
  */
-export function bindShow(el: HTMLElement | SVGElement, signal: MaybeAccessor<any>, display = ''): Computation {
+export function bindShow(
+  el: HTMLElement | SVGElement,
+  signal: MaybeAccessor<any>,
+  display = ''
+): Computation {
   return createEffect(() => {
     el.style.display = access(signal) ? display : 'none';
   });
@@ -2176,7 +2272,11 @@ export function bindShow(el: HTMLElement | SVGElement, signal: MaybeAccessor<any
  * @param {Function} factory - 创建块内容的函数。
  * @returns {Function} 清理函数。
  */
-export function bindIf(anchor: Node, condition: MaybeAccessor<any>, factory: () => any): () => void {
+export function bindIf(
+  anchor: Node,
+  condition: MaybeAccessor<any>,
+  factory: () => any
+): () => void {
   const parent = anchor.parentNode as Node;
   const marker = document.createComment('if');
   parent.insertBefore(marker, anchor.nextSibling);
@@ -2235,7 +2335,16 @@ function defaultListKey(item: any, index: number): any {
  * @param {Object} [options={}] - 列表配置。
  * @returns {Function} 清理函数。
  */
-export function bindList(anchor: Node, listSignal: MaybeAccessor<any[]>, renderItem: (item: any, index: Accessor<number>, itemAccessor: Accessor<any>) => any, options: any = {}): () => void {
+export function bindList(
+  anchor: Node,
+  listSignal: MaybeAccessor<any[]>,
+  renderItem: (
+    item: any,
+    index: Accessor<number>,
+    itemAccessor: Accessor<any>
+  ) => any,
+  options: any = {}
+): () => void {
   const keyFn = options.key || defaultListKey;
   const listOwner = Owner;
   let records: any[] = [];
@@ -2339,7 +2448,9 @@ export function createListKey(property: string): (item: any) => any {
  * @param {...string} properties - 参与组合的属性名。
  * @returns {Function} key 提取函数。
  */
-export function createCompositeKey(...properties: string[]): (item: any) => string {
+export function createCompositeKey(
+  ...properties: string[]
+): (item: any) => string {
   return (item) => {
     const value = access(item);
     return properties.map((property) => value?.[property]).join('_');
@@ -2417,7 +2528,10 @@ function setStyle(el: any, value: any): void {
  * @param {Object} value - class 到布尔值/访问器的映射。
  * @returns {void}
  */
-function setClassList(el: Element, value: Record<string, any> | null | undefined): void {
+function setClassList(
+  el: Element,
+  value: Record<string, any> | null | undefined
+): void {
   const classMap = value || {};
   Object.keys(classMap).forEach((name) => {
     el.classList.toggle(name, !!access(classMap[name]));
@@ -2571,12 +2685,19 @@ function normalizeChildren(props: any, children: any[]): any {
  * @param {...*} children - 子节点。
  * @returns {*} 组件结果或 DOM 元素。
  */
-export function h(type: string | ((props: any) => any), props?: any, ...children: any[]): any {
+export function h(
+  type: string | ((props: any) => any),
+  props?: any,
+  ...children: any[]
+): any {
   props = props || {};
   const normalizedChildren = normalizeChildren(props, children);
 
   if (typeof type === 'function') {
-    return (type as (props: any) => any)({ ...props, children: normalizedChildren });
+    return (type as (props: any) => any)({
+      ...props,
+      children: normalizedChildren,
+    });
   }
 
   const el = SVG_TAGS.has(type as string)
@@ -2679,7 +2800,10 @@ export function html(markup: any): Node | Node[] {
  * @param {Array} values - 插值数组。
  * @returns {Node|Node[]} DOM 节点或节点数组。
  */
-function templateToNodes(strings: TemplateStringsArray | string[], values: any[]): Node | Node[] {
+function templateToNodes(
+  strings: TemplateStringsArray | string[],
+  values: any[]
+): Node | Node[] {
   let html = '';
   const attrTokens = new Map<string, number>();
   const attrNames = new Map<number, string>();
@@ -2763,7 +2887,11 @@ export const jsxDEV = jsx;
  * @param {Object} props - Show 参数。
  * @returns {Function} 可渲染访问器。
  */
-export function Show(props: { when: MaybeAccessor<any>; children?: any; fallback?: any }): Accessor<any> {
+export function Show(props: {
+  when: MaybeAccessor<any>;
+  children?: any;
+  fallback?: any;
+}): Accessor<any> {
   return () => {
     const when = access(props.when);
     if (when) {
@@ -2783,7 +2911,12 @@ export function Show(props: { when: MaybeAccessor<any>; children?: any; fallback
  * @param {Object} props - For 参数。
  * @returns {DocumentFragment} 包含列表锚点的片段。
  */
-export function For(props: { each: MaybeAccessor<any[]>; children?: any; key?: (item: any, index: number) => any; fallback?: any }): DocumentFragment {
+export function For(props: {
+  each: MaybeAccessor<any[]>;
+  children?: any;
+  key?: (item: any, index: number) => any;
+  fallback?: any;
+}): DocumentFragment {
   const fragment = document.createDocumentFragment();
   const start = document.createComment('for-start');
   const end = document.createComment('for-end');

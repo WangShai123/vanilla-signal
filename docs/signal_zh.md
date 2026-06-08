@@ -10,10 +10,28 @@
 - 支持 JSX 使用体验：无构建环境使用 `` jsx `...` `` 模板；有构建环境可接入 JSX runtime。
 - 可维护：业务代码以 state、memo、effect、DOM binding 分层组织。
 
-## 打包结果
+## 安装
 
-- `signal.mjs`：ES Module，适合现代浏览器和构建工具。
-- `signal.umd.js`：UMD 模块，适合直接在浏览器中通过 `<script>` 引入。GlobalName: `signal`。
+npm:
+
+```bash
+npm install vanilla-signal
+```
+
+script:
+
+```html
+<!-- umd 全局变量：signal -->
+<script src="https://unpkg.com/vanilla-signal/dist/index.umd.js"></script>
+<script>
+  const { createSignal } = signal;
+</script>
+
+<!-- esm 模块导入 -->
+<script type="module">
+  import { createSignal } from 'https://unpkg.com/vanilla-signal/dist/index.mjs';
+</script>
+```
 
 ## 基本概念
 
@@ -945,7 +963,7 @@ jsx`
 
 ```js
 // automatic runtime 需要构建器把 JSX 转成 jsx/jsxs 调用
-// importSource 指向 signal.js 的导出位置，按项目实际路径配置
+// importSource 指向 index.js 的导出位置，按项目实际路径配置
 ```
 
 编译后等价于：

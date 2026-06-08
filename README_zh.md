@@ -1,6 +1,6 @@
 # Signal
 
-`signal.js` 是细粒度响应式运行时，设计目标是接近 SolidJS 的心智模型，同时保持“无依赖、无构建也能直接在浏览器中使用”。它适合用原生 JS 编写中小型 UI、表单、列表、库存表、弹窗内容、异步数据区块等交互。
+`Signal` 是细粒度响应式运行时，设计目标是接近 SolidJS 的心智模型，同时保持“无依赖、无构建也能直接在浏览器中使用”。它适合用原生 JS 编写中小型 UI、表单、列表、库存表、弹窗内容、异步数据区块等交互。
 
 ## 设计目标
 
@@ -10,10 +10,28 @@
 - 支持 JSX 使用体验：无构建环境使用 `` jsx `...` `` 模板；有构建环境可接入 JSX runtime。
 - 可维护：业务代码以 state、memo、effect、DOM binding 分层组织。
 
-## 打包结果
+## 安装
 
-- `signal.mjs`：ES Module，适合现代浏览器和构建工具。
-- `signal.umd.js`：UMD 模块，适合直接在浏览器中通过 `<script>` 引入。GlobalName: `signal`。
+npm:
+
+```bash
+npm install vanilla-signal
+```
+
+script:
+
+```html
+<!-- umd 全局变量：signal -->
+<script src="https://unpkg.com/vanilla-signal/dist/index.umd.js"></script>
+<script>
+  const { createSignal } = signal;
+</script>
+
+<!-- esm 模块导入 -->
+<script type="module">
+  import { createSignal } from 'https://unpkg.com/vanilla-signal/dist/index.mjs';
+</script>
+```
 
 ## 使用文档
 
@@ -90,3 +108,7 @@ render(
 | DOM         | `insert`, `render`, `bindText`, `bindAttr`, `bindStyle`, `bindClass`, `bindShow`, `bindIf`, `bindList`    |
 | 列表辅助    | `createListKey`, `createCompositeKey`, `For`, `Show`                                                      |
 | JSX Runtime | `jsx`, `jsxs`, `jsxDEV`, `h`, `createElement`, `Fragment`                                                 |
+
+## 翻译
+
+- [English](./README.md)

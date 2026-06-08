@@ -4,19 +4,19 @@
 
 ## 推荐视频结构
 
-| 集数 | 文件 | 主题 | 建议时长 |
-| --- | --- | --- | --- |
-| 1 | `01-认识-vanilla-signal.md` | 从原生 DOM 痛点引出细粒度响应式 | 8-12 分钟 |
-| 2 | `02-signal-effect-memo.md` | 掌握 `createSignal`、`createEffect`、`createMemo` | 12-16 分钟 |
-| 3 | `03-render-jsx-dom.md` | 用 `render`、`jsx``、事件和动态属性构建 UI | 12-16 分钟 |
-| 4 | `04-store-form-list.md` | 用 `createDeepStore` 写表单、列表、派生统计 | 15-20 分钟 |
-| 5 | `05-show-for-async.md` | 条件渲染、列表渲染、异步请求状态 | 15-20 分钟 |
-| 6 | `06-mini-project.md` | 完整小项目：任务面板 | 20-30 分钟 |
-| 7 | `07-调度-监听-选择器.md` | `createWatch`、`createSelector`、`batch`、`untrack`、`flushSync`、`startTransition` | 15-20 分钟 |
-| 8 | `08-生命周期-作用域-错误处理.md` | `createRoot`、`createScope`、`onCleanup`、`onMount`、`createErrorBoundary`、`catchError` | 15-20 分钟 |
-| 9 | `09-dom底层api与老项目增强.md` | `insert`、`bindText`、`bindAttr`、`bindStyle`、`bindClass`、`bindShow`、`bindIf`、`bindList` | 15-20 分钟 |
-| 10 | `10-高级异步-createSuspense.md` | `createResource` 高级选项、`createQuery` 重试与竞态、`createSuspense` | 18-25 分钟 |
-| 附录 | `api-场景速查.md` | API 用法和适用场景速查 | 随课件使用 |
+| 集数 | 文件                             | 主题                                                                                         | 建议时长   |
+| ---- | -------------------------------- | -------------------------------------------------------------------------------------------- | ---------- |
+| 1    | `01-认识-vanilla-signal.md`      | 从原生 DOM 痛点引出细粒度响应式                                                              | 8-12 分钟  |
+| 2    | `02-signal-effect-memo.md`       | 掌握 `createSignal`、`createEffect`、`createMemo`                                            | 12-16 分钟 |
+| 3    | `03-render-jsx-dom.md`           | 用 `render`、`jsx``、事件和动态属性构建 UI                                                   | 12-16 分钟 |
+| 4    | `04-store-form-list.md`          | 用 `createDeepStore` 写表单、列表、派生统计                                                  | 15-20 分钟 |
+| 5    | `05-show-for-async.md`           | 条件渲染、列表渲染、异步请求状态                                                             | 15-20 分钟 |
+| 6    | `06-mini-project.md`             | 完整小项目：任务面板                                                                         | 20-30 分钟 |
+| 7    | `07-调度-监听-选择器.md`         | `createWatch`、`createSelector`、`batch`、`untrack`、`flushSync`、`startTransition`          | 15-20 分钟 |
+| 8    | `08-生命周期-作用域-错误处理.md` | `createRoot`、`createScope`、`onCleanup`、`onMount`、`createErrorBoundary`、`catchError`     | 15-20 分钟 |
+| 9    | `09-dom底层api与老项目增强.md`   | `insert`、`bindText`、`bindAttr`、`bindStyle`、`bindClass`、`bindShow`、`bindIf`、`bindList` | 15-20 分钟 |
+| 10   | `10-高级异步-createSuspense.md`  | `createResource` 高级选项、`createQuery` 重试与竞态、`createSuspense`                        | 18-25 分钟 |
+| 附录 | `api-场景速查.md`                | API 用法和适用场景速查                                                                       | 随课件使用 |
 
 ## 录制建议
 
@@ -26,7 +26,7 @@
 4. 代码演示优先使用 UMD 版本，避免初学者被构建工具打断：
 
 ```html
-<script src="./dist/signal.umd.js"></script>
+<script src="./dist/index.umd.js"></script>
 <script>
   const { createSignal, createMemo, createDeepStore, render, jsx, For, Show } =
     signal;
@@ -44,7 +44,7 @@ import {
   jsx,
   For,
   Show,
-} from './dist/signal.mjs';
+} from './dist/index.mjs';
 ```
 
 ## 课程主线
@@ -59,7 +59,7 @@ import {
 - `createEffect`：当读过的值变化时，自动重新执行一段副作用。
 - `createMemo`：像 Excel 公式一样，根据其他状态算出新值。
 - `createDeepStore`：把对象和数组变成响应式状态，适合表单、列表、业务页面。
-- `jsx``...``：无构建环境下，用接近 HTML 的方式创建 DOM。
+- `jsx`...`：无构建环境下，用接近 HTML 的方式创建 DOM。
 - `render`：把响应式 UI 挂到页面上，并负责清理。
 - `Show` / `For`：用组件化写法处理条件和列表。
 - `createResource` / `createQuery`：把请求的 loading、error、data 管起来。

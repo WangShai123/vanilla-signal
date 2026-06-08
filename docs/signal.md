@@ -10,10 +10,28 @@
 - Supports JSX experience: Uses `` jsx `...` `` template literals in environments without builds; can integrate with JSX runtime in build environments.
 - Maintainable: Business code is organized in layers of state, memo, effect, and DOM binding.
 
-## Build Outputs
+## Install
 
-- `signal.mjs`: ES Module, suitable for modern browsers and build tools.
-- `signal.umd.js`: UMD module, suitable for direct inclusion in browsers via `<script>` tag. GlobalName: `signal`.
+npm:
+
+```bash
+npm install vanilla-signal
+```
+
+script:
+
+```html
+<!-- umd GlobalName: signal -->
+<script src="https://unpkg.com/vanilla-signal/dist/index.umd.js"></script>
+<script>
+  const { createSignal } = signal;
+</script>
+
+<!-- es module -->
+<script type="module">
+  import { createSignal } from 'https://unpkg.com/vanilla-signal/dist/index.mjs';
+</script>
+```
 
 ## Basic Concepts
 
@@ -945,7 +963,7 @@ If your project integrates Babel/Vite JSX transformation, you can configure to u
 
 ```js
 // automatic runtime requires build tools to transform JSX into jsx/jsxs calls
-// importSource points to signal.js export location, configure according to actual project path
+// importSource points to index.js export location, configure according to actual project path
 ```
 
 After compilation, equivalent to:

@@ -8,7 +8,7 @@
 
 前面我们已经学会了状态和派生值。但前端最终还是要把内容显示到页面上。
 
-这一集我们学习 `render` 和 `jsx``...``。它们能让我们在原生浏览器环境里，用接近 HTML 的写法创建 DOM，并且让文本、属性、样式、事件都能响应式更新。
+这一集我们学习 `render` 和 `jsx`...`。它们能让我们在原生浏览器环境里，用接近 HTML 的写法创建 DOM，并且让文本、属性、样式、事件都能响应式更新。
 
 ## 1. render：把 UI 挂到页面
 
@@ -245,7 +245,7 @@ const node = jsx('button', {
 
 ```html
 <div id="app"></div>
-<script src="../dist/signal.umd.js"></script>
+<script src="../dist/index.umd.js"></script>
 <script>
   const { createSignal, render, jsx } = signal;
 
@@ -294,7 +294,7 @@ const node = jsx('button', {
 这一集我们学会了：
 
 - `render` 用来挂载 UI。
-- `jsx``...`` 用来在无构建环境里写模板。
+- `jsx`...` 用来在无构建环境里写模板。
 - 文本、属性、class、style、事件都可以和 signal 连接。
 - SVG 可以直接写在模板里。
 

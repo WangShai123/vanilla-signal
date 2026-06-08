@@ -42,7 +42,7 @@
   <head>
     <meta charset="UTF-8" />
     <title>vanilla-signal task board</title>
-    <script src="../dist/signal.umd.js"></script>
+    <script src="../dist/index.umd.js"></script>
     <style>
       body {
         margin: 0;
