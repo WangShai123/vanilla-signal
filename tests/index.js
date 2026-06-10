@@ -18,7 +18,7 @@ import {
   render,
   startTransition,
   untrack,
-} from '../dist/index.mjs';
+} from '../dist/index.js';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const tick = () => sleep(0);

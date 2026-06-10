@@ -44,7 +44,7 @@ import {
   jsx,
   For,
   Show,
-} from './dist/index.mjs';
+} from './dist/index.js';
 ```
 
 ## 课程主线

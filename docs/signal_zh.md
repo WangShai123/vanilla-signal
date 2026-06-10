@@ -29,7 +29,7 @@ script:
 
 <!-- esm 模块导入 -->
 <script type="module">
-  import { createSignal } from 'https://unpkg.com/vanilla-signal/dist/index.mjs';
+  import { createSignal } from 'https://unpkg.com/vanilla-signal/dist/index.js';
 </script>
 ```
 

@@ -12,7 +12,7 @@ export default defineConfig({
     clean: true,
     outExtensions({ format }) {
       return {
-        js: format === 'es' ? '.mjs' : '.js',
+        js: format === 'es' ? '.js' : '.js',
       };
     },
     dts: {

@@ -21,7 +21,7 @@ npm install vanilla-signal
 script:
 
 ```html
-<!-- umd 全局变量：signal -->
+<!-- umd 全局变量 signal -->
 <script src="https://unpkg.com/vanilla-signal/dist/index.umd.js"></script>
 <script>
   const { createSignal } = signal;
@@ -29,7 +29,7 @@ script:
 
 <!-- esm 模块导入 -->
 <script type="module">
-  import { createSignal } from 'https://unpkg.com/vanilla-signal/dist/index.mjs';
+  import { createSignal } from 'https://unpkg.com/vanilla-signal/dist/index.js';
 </script>
 ```
 
