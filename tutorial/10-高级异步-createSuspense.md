@@ -2,19 +2,18 @@
 
 ## 本集目标
 
-这一集补齐异步相关的进阶用法：
+这一集补齐 `vanilla-signal` 主包里的异步进阶用法：
 
 - `createResource` 的 `initialValue`、`loadingDelay`、`mutate`、`reload`、`refetch`、`suspense`、`throwErrors`
-- `createQuery` 的 `enabled`、`queryKey`、`keepPreviousData`、`retry`、`retryDelay`、`promise`
 - `createSuspense` 的工作方式和使用场景
 
 ## 开场口播
 
-前面我们已经用过 `createResource` 和 `createQuery` 处理请求。
+前面我们已经用过 `createResource` 处理请求。
 
 这一集我们把异步部分讲完整。
 
-真实业务里的请求不只是“加载成功显示数据”，还会涉及首次 loading、防闪烁、重试、保留旧数据、取消过期请求，以及 Suspense 风格的 fallback。
+真实业务里的请求不只是“加载成功显示数据”，还会涉及首次 loading、防闪烁、本地乐观更新、刷新旧数据，以及 Suspense 风格的 fallback。
 
 ## 1. createResource 的两种写法
 
@@ -335,162 +334,19 @@ const content = createSuspense(
 
 Suspense 更适合封装通用异步组件，或者想把 loading 逻辑提到外层统一处理的场景。
 
-## 12. createQuery：业务请求更完整
+## 12. 搜索、列表和详情如何组织
 
-### 代码
+### 口播
 
-```js
-const products = createQuery({
-  queryKey: () => state.keyword.trim(),
-  enabled: () => state.keyword.trim().length > 0,
-  keepPreviousData: true,
-  retry: 2,
-  retryDelay: (attempt) => attempt * 500,
-  queryFn: async ({ queryKey, signal, attempt }) => {
-    const response = await fetch(
-      `/api/search?q=${encodeURIComponent(queryKey)}`,
-      { signal }
-    );
+搜索、列表和详情页都可以先拆成两层：
 
-    if (!response.ok) {
-      throw new Error(`搜索失败，第 ${attempt} 次尝试`);
-    }
+第一层是参数状态，比如关键词、页码、当前 id。
 
-    return response.json();
-  },
-});
-```
+第二层是异步资源，用 `createResource(source, fetcher)` 根据参数变化重新请求。
 
-### 讲解
+这样 UI 可以直接围绕 `resourceState.loading`、`resourceState.error` 和 `resource()` 来组织。
 
-`queryKey` 是请求的关键参数。
-
-`enabled` 控制是否允许自动请求。
-
-`keepPreviousData` 表示新请求过程中是否保留旧数据。
-
-`retry` 是失败后重试次数。
-
-`retryDelay` 是每次重试前等待多久。
-
-`queryFn` 会收到 `signal`，可以交给 `fetch`。当新的请求开始时，旧请求会被中断，避免旧结果覆盖新结果。
-
-## 13. createQuery 的状态字段
-
-### 代码
-
-```js
-products.state.status;
-products.state.isPending;
-products.state.isLoading;
-products.state.isFetching;
-products.state.isError;
-products.state.isSuccess;
-products.state.error;
-products.state.failureCount;
-products.state.updatedAt;
-```
-
-### 讲解
-
-`isLoading` 更偏首次加载或没有可展示数据时的加载。
-
-`isFetching` 表示当前正在请求，不管有没有旧数据。
-
-所以很多页面可以这样显示：
-
-首次加载显示骨架屏。
-
-已有数据时，右上角显示一个小的“刷新中”。
-
-请求失败显示错误和重试按钮。
-
-## 14. createQuery 渲染模式
-
-### 代码
-
-```js
-render(
-  () => jsx`
-    <section>
-      <input
-        placeholder="搜索商品"
-        value=${() => state.keyword}
-        onInput=${(event) => {
-          state.keyword = event.currentTarget.value;
-        }}
-      >
-
-      ${() =>
-        products.state.isLoading
-          ? jsx`<div class="skeleton">加载中...</div>`
-          : products.state.isError
-            ? jsx`
-                <div class="error">
-                  <p>${() => products.state.error.message}</p>
-                  <button onClick=${() => products.retry()}>重试</button>
-                </div>
-              `
-            : jsx`
-                <div>
-                  ${Show({
-                    when: () => products.state.isFetching,
-                    children: jsx`<small>刷新中...</small>`,
-                  })}
-
-                  ${For({
-                    each: () => products() || [],
-                    key: (item) => item.id,
-                    fallback: jsx`<p>暂无结果</p>`,
-                    children: (item) => jsx`
-                      <article>
-                        <h3>${() => item().name}</h3>
-                        <p>${() => `¥${item().price}`}</p>
-                      </article>
-                    `,
-                  })}
-                </div>
-              `}
-    </section>
-  `,
-  app
-);
-```
-
-### 讲解
-
-这里用到了一个比较完整的异步 UI 结构：
-
-首次加载：骨架屏。
-
-请求失败：错误提示和重试按钮。
-
-请求成功：列表。
-
-后台刷新：显示小提示，但保留旧列表。
-
-空结果：`For` 的 fallback。
-
-## 15. promise：拿到当前请求
-
-### 代码
-
-```js
-async function submitAfterLoaded() {
-  await products.promise();
-  console.log('当前请求完成后再继续');
-}
-```
-
-### 讲解
-
-`query.promise()` 返回当前请求 Promise。
-
-适合少数需要等待当前请求完成后继续执行的场景。
-
-如果当前还没有请求，它可能是 `null`，实际使用时要注意判断。
-
-## 16. 异步 API 怎么选
+## 13. 异步 API 怎么选
 
 ### 口播
 
@@ -498,13 +354,11 @@ async function submitAfterLoaded() {
 
 如果只是一个简单异步值，用 `createResource`。
 
-如果是搜索、列表、详情卡片，关心重试、保留旧数据和更细状态，用 `createQuery`。
-
-如果你要封装 Suspense 风格的异步 UI，用 `createResource({ suspense: true })` 加 `createSuspense`。
+如果要封装 Suspense 风格的异步 UI，用 `createResource({ suspense: true })` 加 `createSuspense`。
 
 如果只是普通按钮提交，用原生 `async/await` 和一个 `loading` signal 也完全可以。
 
-## 17. 常见坑
+## 14. 常见坑
 
 ### 坑一：把所有请求都做成 Suspense
 
@@ -514,7 +368,7 @@ Suspense 是高级组织方式，不是所有请求都需要。
 
 ### 坑二：搜索请求不处理过期结果
 
-`createQuery` 会中断旧请求，并且内部有请求 id 判断，适合搜索框这类高频请求。
+`createResource` 内部会处理“最新请求优先”，过期请求不会覆盖新数据。
 
 ### 坑三：重试次数太多
 
@@ -535,6 +389,5 @@ Suspense 是高级组织方式，不是所有请求都需要。
 - `mutate` 支持本地乐观更新。
 - `throwErrors` 和 `suspense` 可以把错误或 Promise 交给外层处理。
 - `createSuspense` 捕获 Promise，先显示 fallback，完成后重新渲染。
-- `createQuery` 更适合业务请求，支持重试、中断旧请求和保留旧数据。
 
 到这里，`vanilla-signal` 的核心、DOM、Store、生命周期和异步能力已经形成完整闭环。

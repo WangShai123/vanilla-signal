@@ -100,7 +100,7 @@ render(
 | Lifecycle      | `createRoot`, `createScope`, `onCleanup`, `onDispose`, `onMount`, `getOwner`                              |
 | Error Handling | `createErrorBoundary`, `catchError`                                                                       |
 | Store          | `createStore`, `createDeepStore`, `createReadonly`, `produce`, `unwrap`, `snapshot`                       |
-| Async          | `createResource`, `createQuery`, `createSuspense`                                                         |
+| Async          | `createResource`, `createSuspense`                                                                        |
 | DOM            | `insert`, `render`, `bindText`, `bindAttr`, `bindStyle`, `bindClass`, `bindShow`, `bindIf`, `bindList`    |
 | List Helpers   | `createListKey`, `createCompositeKey`, `For`, `Show`                                                      |
 | JSX Runtime    | `jsx`, `jsxs`, `jsxDEV`, `h`, `createElement`, `Fragment`                                                 |
@@ -680,102 +680,9 @@ render(
 );
 ```
 
-### createQuery
+### Advanced Query APIs
 
-`createQuery` is a more business-oriented request API with built-in status, loading, error, retry/refetch states, suitable for lists, details, dashboard cards, and other async sections.
-
-```js
-const query = createQuery({
-  queryKey: () => state.keyword,
-  queryFn: async ({ queryKey, signal, attempt }) => {
-    const response = await fetch(
-      `/api/search?q=${encodeURIComponent(queryKey)}`,
-      {
-        signal,
-      }
-    );
-    return response.json();
-  },
-  retry: 2,
-  retryDelay: (attempt) => attempt * 500,
-});
-```
-
-Reading data:
-
-```js
-query();
-query.state.status; // pending | success | error
-query.state.isLoading;
-query.state.isFetching;
-query.state.isError;
-query.state.isSuccess;
-query.state.error;
-query.state.failureCount;
-query.state.updatedAt;
-```
-
-Control methods:
-
-```js
-query.refetch();
-query.retry();
-query.promise();
-```
-
-#### Loading / Skeleton / Retry Example
-
-```js
-const products = createQuery({
-  retry: 0,
-  queryFn: async () => {
-    const response = await fetch('/api/products');
-    if (!response.ok) throw new Error('Request failed');
-    return response.json();
-  },
-});
-
-render(
-  () => jsx`
-  <section>
-    ${() =>
-      products.state.isLoading
-        ? jsx`<div class="skeleton">Loading products...</div>`
-        : products.state.isError
-          ? jsx`
-          <div class="error">
-            ${() => products.state.error?.message || 'Request failed'}
-            <button onClick=${() => products.retry()}>Retry</button>
-          </div>
-        `
-          : jsx`
-          <ul>
-            ${For({
-              each: () => products() || [],
-              key: (item) => item.id,
-              children: (item) => jsx`<li>${() => item().name}</li>`,
-            })}
-          </ul>
-        `}
-  </section>
-`,
-  app
-);
-```
-
-Options:
-
-```js
-createQuery({
-  queryKey, // plain value or accessor; changes trigger re-request
-  queryFn, // ({ queryKey, signal, attempt }) => Promise<data>
-  enabled: true, // plain value or accessor; doesn't auto-request when false
-  initialData, // initial data
-  keepPreviousData: true,
-  retry: 0, // number or (attempt, error) => boolean
-  retryDelay: (attempt) => Math.min(1000 * attempt, 3000),
-});
-```
+`createQuery` has been removed from `vanilla-signal`. Use `createResource` for the built-in async primitive. For query-key, retry, stale data, and request cache workflows, use the standalone `vanilla-signal-query` package.
 
 ### createSuspense
 
@@ -1197,16 +1104,17 @@ const state = createDeepStore({
   keyword: '',
 });
 
-const result = createQuery({
-  queryKey: () => state.keyword,
-  enabled: () => state.keyword.trim().length > 0,
-  queryFn: async ({ queryKey }) => {
+const [result, { state: resultState, reload }] = createResource(
+  () => state.keyword.trim(),
+  async (queryKey) => {
+    if (!queryKey) return [];
     const response = await fetch(
       `/api/search?q=${encodeURIComponent(queryKey)}`
     );
     return response.json();
   },
-});
+  { initialValue: [] }
+);
 
 render(
   () => jsx`
@@ -1216,10 +1124,10 @@ render(
     }}>
 
     ${() =>
-      result.state.isLoading
+      resultState.loading
         ? jsx`<div>Searching...</div>`
-        : result.state.isError
-          ? jsx`<button onClick=${() => result.retry()}>Retry</button>`
+        : resultState.error
+          ? jsx`<button onClick=${() => reload().catch(() => undefined)}>Retry</button>`
           : For({
               each: () => result() || [],
               key: (item) => item.id,
@@ -1254,7 +1162,7 @@ render(
 - Deep store only recursively proxies plain objects and arrays; `Map`, `Set`, `Date`, class instances are treated as plain values.
 - `bindList`'s anchor must already be in DOM.
 - Async request APIs handle "latest request priority"; expired requests won't override new data.
-- `createQuery` initial auto-request failures swallow unhandled Promise rejections, but errors are saved in `query.state.error`; manually returned Promises from `retry/refetch` can still be `await/catch` by callers.
+- Query-specific workflows such as query keys, retries, stale data and cache policies live in the standalone `vanilla-signal-query` package.
 
 ## API Quick Reference
 
@@ -1297,7 +1205,6 @@ snapshot(value)
 // Async
 createResource(fetcher, options?)
 createResource(source, fetcher, options?)
-createQuery(options | queryFn)
 createSuspense(fn, fallback)
 
 // DOM

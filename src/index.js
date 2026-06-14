@@ -848,7 +848,7 @@ export function createWatch(source, fn, options = {}) {
  *
  * 常用于列表项选中状态，只让匹配项和取消匹配项更新。
  *
- * @param {Function|*} source - 当前选中值或其访问器。
+ * @param {*} source - 当前选中值或其访问器。
  * @param {Function} [equals=Object.is] - key 比较函数。
  * @returns {Function} 接收 key 并返回是否匹配的函数。
  */
@@ -1056,7 +1056,7 @@ export function createErrorBoundary(fn, fallback) {
  * 与 createErrorBoundary 不同，它不创建响应式作用域，只处理当前调用栈里的异常。
  *
  * @param {Function} fn - 需要保护执行的函数。
- * @param {*|Function} fallback - 错误发生时返回的值或错误映射函数。
+ * @param {*} fallback - 错误发生时返回的值或错误映射函数。
  * @returns {*} fn 的结果或 fallback 结果。
  */
 export function catchError(fn, fallback) {
@@ -1652,174 +1652,12 @@ export function createResource(source, fetcher, options) {
 }
 
 /**
- * 创建查询资源。
- *
- * query 提供接近常见数据请求库的状态字段，包括 pending/loading/fetching/success/error 与 retry。
- *
- * @param {Object|Function} options - 查询配置，或直接作为 queryFn 的函数。
- * @returns {Function} 查询读取函数，附带 state、refetch、retry、promise。
- */
-export function createQuery(options) {
-  if (typeof options === 'function') {
-    options = { queryFn: options };
-  }
-
-  const {
-    enabled = true,
-    initialData,
-    keepPreviousData = true,
-    queryFn,
-    queryKey,
-    retry = 0,
-    retryDelay = (attempt) => Math.min(1000 * attempt, 3000),
-  } = options || {};
-
-  if (typeof queryFn !== 'function') {
-    throw new TypeError('createQuery requires a queryFn');
-  }
-
-  const state = createDeepStore({
-    data: initialData,
-    error: null,
-    failureCount: 0,
-    isError: false,
-    isFetching: false,
-    isLoading: false,
-    isPending: initialData === undefined,
-    isSuccess: initialData !== undefined,
-    status: initialData === undefined ? 'pending' : 'success',
-    updatedAt: initialData === undefined ? 0 : Date.now(),
-  });
-
-  let requestId = 0;
-  let currentPromise = null;
-  let controller = null;
-
-  function getKey() {
-    return access(queryKey);
-  }
-
-  function getEnabled() {
-    return !!access(enabled);
-  }
-
-  function waitDelay(value, attempt) {
-    const delay = typeof value === 'function' ? value(attempt) : value;
-    return sleepFor(delay || 0);
-  }
-
-  async function execute({ force = false } = {}) {
-    if (!force && !getEnabled()) return state.data;
-
-    const id = ++requestId;
-    const key = getKey();
-    controller?.abort?.();
-    controller =
-      typeof AbortController !== 'undefined' ? new AbortController() : null;
-
-    state.isFetching = true;
-    state.isLoading = state.data === undefined || !keepPreviousData;
-    state.isPending = state.data === undefined;
-    state.isError = false;
-    state.error = null;
-    state.status = state.data === undefined ? 'pending' : 'success';
-
-    let attempt = 0;
-
-    const run = async () => {
-      attempt++;
-      try {
-        const data = await queryFn({
-          attempt,
-          queryKey: key,
-          signal: controller?.signal,
-        });
-
-        if (id !== requestId) return state.data;
-
-        state.data = data;
-        state.error = null;
-        state.failureCount = 0;
-        state.isError = false;
-        state.isFetching = false;
-        state.isLoading = false;
-        state.isPending = false;
-        state.isSuccess = true;
-        state.status = 'success';
-        state.updatedAt = Date.now();
-        return data;
-      } catch (error) {
-        if (id !== requestId && error?.name === 'AbortError') return state.data;
-
-        const shouldRetry =
-          typeof retry === 'function'
-            ? retry(attempt, error)
-            : attempt <= Number(retry || 0);
-
-        if (shouldRetry) {
-          await waitDelay(retryDelay, attempt);
-          if (id !== requestId) return state.data;
-          return run();
-        }
-
-        if (id === requestId) {
-          state.error = error;
-          state.failureCount = attempt;
-          state.isError = true;
-          state.isFetching = false;
-          state.isLoading = false;
-          state.isPending = false;
-          state.isSuccess = false;
-          state.status = 'error';
-        }
-
-        throw error;
-      }
-    };
-
-    currentPromise = run();
-    return currentPromise;
-  }
-
-  createEffect(() => {
-    getKey();
-    if (getEnabled()) execute().catch(() => undefined);
-  });
-
-  function read() {
-    return state.data;
-  }
-
-  read.state = state;
-  read.refetch = (options) => execute({ ...options, force: true });
-  read.retry = () => execute({ force: true });
-  read.promise = () => currentPromise;
-
-  return read;
-}
-
-/**
- * 等待指定毫秒数。
- *
- * 在 Node 环境下会尝试 unref timer，避免测试或脚本被 retry 延迟阻塞退出。
- *
- * @param {number} ms - 等待时间。
- * @returns {Promise<void>} 延迟完成的 Promise。
- */
-function sleepFor(ms) {
-  return new Promise((resolve) => {
-    const timer = setTimeout(resolve, ms);
-    timer?.unref?.();
-  });
-}
-
-/**
  * 创建简单的 suspense memo。
  *
  * 当 fn 抛出 Promise 时返回 fallback，并在 Promise settle 后触发重新计算。
  *
  * @param {Function} fn - 可能抛出 Promise 的读取函数。
- * @param {*|Function} fallback - pending 时返回的兜底值或访问器。
+ * @param {*} fallback - pending 时返回的兜底值或访问器。
  * @returns {Function} memo 读取函数。
  */
 export function createSuspense(fn, fallback) {
@@ -1974,7 +1812,7 @@ export function render(value, container) {
  * 将文本节点内容绑定到 signal。
  *
  * @param {Element} el - 目标元素。
- * @param {*|Function} signal - 文本值或访问器。
+ * @param {*} signal - 文本值或访问器。
  * @returns {Object} effect 计算节点。
  */
 export function bindText(el, signal) {
@@ -1991,7 +1829,7 @@ export function bindText(el, signal) {
  *
  * @param {Element} el - 目标元素。
  * @param {string} name - 属性名。
- * @param {*|Function} signal - 属性值或访问器。
+ * @param {*} signal - 属性值或访问器。
  * @returns {Object} effect 计算节点。
  */
 export function bindAttr(el, name, signal) {
@@ -2014,7 +1852,7 @@ export function bindAttr(el, name, signal) {
  *
  * @param {HTMLElement|SVGElement} el - 目标元素。
  * @param {string|Object} name - 样式名或样式对象。
- * @param {*|Function} signal - 单个样式值或访问器。
+ * @param {*} signal - 单个样式值或访问器。
  * @returns {Object} effect 计算节点。
  */
 export function bindStyle(el, name, signal) {
@@ -2033,7 +1871,7 @@ export function bindStyle(el, name, signal) {
  *
  * @param {Element} el - 目标元素。
  * @param {string} name - class 名称。
- * @param {*|Function} signal - 布尔值或访问器。
+ * @param {*} signal - 布尔值或访问器。
  * @returns {Object} effect 计算节点。
  */
 export function bindClass(el, name, signal) {
@@ -2048,7 +1886,7 @@ export function bindClass(el, name, signal) {
  * falsy 时设置为 none，truthy 时恢复为传入的 display 值。
  *
  * @param {HTMLElement|SVGElement} el - 目标元素。
- * @param {*|Function} signal - 显隐布尔值或访问器。
+ * @param {*} signal - 显隐布尔值或访问器。
  * @param {string} [display=''] - 显示时使用的 display 值。
  * @returns {Object} effect 计算节点。
  */
@@ -2064,7 +1902,7 @@ export function bindShow(el, signal, display = '') {
  * factory 只在条件变为 truthy 时执行，块级内容会绑定到独立 root 作用域。
  *
  * @param {Node} anchor - 条件块锚点。
- * @param {*|Function} condition - 条件值或访问器。
+ * @param {*} condition - 条件值或访问器。
  * @param {Function} factory - 创建块内容的函数。
  * @returns {Function} 清理函数。
  */
@@ -2375,7 +2213,7 @@ function setProperty(el, name, value) {
     if (name in el && typeof el[name] !== 'function') {
       try {
         el[name] = value == null ? '' : false;
-      } catch (_) {
+      } catch {
         // Ignore readonly DOM properties.
       }
     }
@@ -2387,7 +2225,7 @@ function setProperty(el, name, value) {
     if (name in el) {
       try {
         el[name] = true;
-      } catch (_) {
+      } catch {
         // Ignore readonly DOM properties.
       }
     }
@@ -2398,7 +2236,7 @@ function setProperty(el, name, value) {
     try {
       el[name] = value;
       return;
-    } catch (_) {
+    } catch {
       // Fall through to setAttribute for readonly DOM properties.
     }
   }
@@ -2467,7 +2305,7 @@ export function h(type, props, ...children) {
   const normalizedChildren = normalizeChildren(props, children);
 
   if (typeof type === 'function') {
-    return type({ ...props, children: normalizedChildren });
+    return type(Object.assign({}, props, { children: normalizedChildren }));
   }
 
   const el = SVG_TAGS.has(type)
@@ -2628,7 +2466,8 @@ export function jsx(type, props, key) {
     return templateToNodes(type, Array.prototype.slice.call(arguments, 1));
   }
 
-  const nextProps = key === undefined ? props : { ...props, key };
+  const nextProps =
+    key === undefined ? props : Object.assign({}, props, { key });
   return h(type, nextProps);
 }
 

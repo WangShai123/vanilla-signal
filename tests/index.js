@@ -4,7 +4,6 @@ import {
   batch,
   bindList,
   bindText,
-  createQuery,
   createDeepStore,
   createEffect,
   createMemo,
@@ -280,12 +279,12 @@ runner.add('createStore shallow', '浅层 store 只追踪直接属性。', async
   let profileRuns = 0;
 
   createEffect(() => {
-    store.name;
+    void store.name;
     nameRuns++;
   });
 
   createEffect(() => {
-    store.profile;
+    void store.profile;
     profileRuns++;
   });
 
@@ -313,15 +312,13 @@ runner.add(
       ],
     });
 
-    let totalRuns = 0;
     let firstRuns = 0;
     const totalStock = createMemo(() => {
-      totalRuns++;
       return state.rows.reduce((sum, row) => sum + row.stock, 0);
     });
 
     createEffect(() => {
-      state.rows[0]?.id;
+      void state.rows[0]?.id;
       firstRuns++;
     });
 
@@ -509,31 +506,43 @@ runner.add(
 );
 
 runner.add(
-  'createQuery loading + retry',
-  '请求前显示 loading/skeleton，失败后支持手动 retry。',
+  'createResource loading + reload',
+  '请求前显示 loading，失败后可通过 reload 恢复。',
   async () => {
     let calls = 0;
-    const query = createQuery({
-      retry: 0,
-      queryFn: async () => {
+    const [resource, controls] = createResource(
+      async () => {
         calls++;
         await sleep(20);
-        if (calls === 1) throw new Error('mock network error');
+        if (calls === 2) throw new Error('mock network error');
         return { rows: ['sku-a', 'sku-b'] };
       },
-    });
+      { initialValue: undefined }
+    );
+    const { state } = controls;
 
-    equal(query.state.status, 'pending', 'query should start pending');
-    equal(query.state.isLoading, true, 'query should show loading before data');
+    equal(state.loading, true, 'resource should show loading before data');
     await sleep(35);
-    equal(query.state.status, 'error', 'first request should fail');
-    assert(query.state.error instanceof Error, 'query should expose error');
+    equal(state.loading, false, 'resource should finish loading');
+    equal(resource().rows.length, 2, 'resource should expose fetched data');
 
-    const promise = query.retry();
-    equal(query.state.isFetching, true, 'retry should enter fetching state');
+    controls.mutate((value) => ({ rows: [...value.rows, 'sku-c'] }));
+    equal(resource().rows.length, 3, 'mutate should update local data');
+
+    let failed = false;
+    try {
+      await controls.reload();
+    } catch {
+      failed = true;
+    }
+    equal(failed, true, 'reload should reject on fetch error');
+    assert(state.error instanceof Error, 'resource should expose error');
+
+    const promise = controls.reload();
+    equal(state.loading, true, 'reload should enter loading state');
     await promise;
-    equal(query.state.status, 'success', 'retry should recover');
-    equal(query().rows.length, 2, 'query should expose fetched data');
+    equal(state.error, null, 'reload should clear error after success');
+    equal(resource().rows.length, 2, 'reload should recover fetched data');
   }
 );
 
@@ -723,42 +732,54 @@ function mountJsxDemo() {
 
 function mountQueryDemo() {
   const host = document.getElementById('query-demo');
-  let calls = 0;
-  const query = createQuery({
-    retry: 0,
-    queryFn: async () => {
-      calls++;
+  let failNext = false;
+  const [rows, controls] = createResource(
+    async () => {
       await sleep(700);
-      if (calls === 1) throw new Error('模拟接口失败');
+      if (failNext) {
+        failNext = false;
+        throw new Error('模拟接口失败');
+      }
       return [
         { id: 'order-101', title: 'Black / S', stock: 12 },
         { id: 'order-102', title: 'Green / L', stock: 7 },
       ];
     },
-  });
+    { initialValue: [] }
+  );
+  const { state } = controls;
 
-  bindText(document.getElementById('query-state'), () => query.state.status);
+  bindText(document.getElementById('query-state'), () => {
+    if (state.loading) return 'loading';
+    if (state.error) return 'error';
+    if (state.isStale) return 'stale';
+    return 'success';
+  });
 
   render(
     () => jsx`
     <section>
       ${() =>
-        query.state.isLoading
+        state.loading && !rows()?.length
           ? jsx`<div class="notice">Loading skeleton: 正在请求 SKU 库存...</div>`
-          : query.state.isError
+          : state.error
             ? jsx`
             <div class="notice">
-              请求失败：${() => query.state.error?.message || ''}
-              <button onClick=${() => query.retry()}>重试</button>
+              请求失败：${() => state.error?.message || ''}
+              <button onClick=${() => controls.reload().catch(() => undefined)}>重试</button>
             </div>
           `
             : jsx`
             <div>
               <div class="preview-row">
-                <span class="chip">rows ${() => query()?.length || 0}</span>
-                <button class="secondary" onClick=${() => query.refetch()}>重新请求</button>
+                <span class="chip">rows ${() => rows()?.length || 0}</span>
+                <button class="secondary" onClick=${() => controls.refetch().catch(() => undefined)}>重新请求</button>
+                <button class="secondary" onClick=${() => {
+                  failNext = true;
+                  void controls.reload().catch(() => undefined);
+                }}>模拟失败</button>
               </div>
-              <div>${() => (query() || []).map((item) => jsx`<span class="chip">${item.title}: ${item.stock}</span>`)}</div>
+              <div>${() => (rows() || []).map((item) => jsx`<span class="chip">${item.title}: ${item.stock}</span>`)}</div>
             </div>
           `}
     </section>
@@ -800,4 +821,4 @@ runner.mount(document.getElementById('test-list'));
 mountSkuDemo();
 mountJsxDemo();
 mountQueryDemo();
-runner.runAll();
+void runner.runAll();

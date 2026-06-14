@@ -104,7 +104,7 @@ render(
 | 生命周期    | `createRoot`, `createScope`, `onCleanup`, `onDispose`, `onMount`, `getOwner`                              |
 | 错误处理    | `createErrorBoundary`, `catchError`                                                                       |
 | Store       | `createStore`, `createDeepStore`, `createReadonly`, `produce`, `unwrap`, `snapshot`                       |
-| 异步        | `createResource`, `createQuery`, `createSuspense`                                                         |
+| 异步        | `createResource`, `createSuspense`                                                                        |
 | DOM         | `insert`, `render`, `bindText`, `bindAttr`, `bindStyle`, `bindClass`, `bindShow`, `bindIf`, `bindList`    |
 | 列表辅助    | `createListKey`, `createCompositeKey`, `For`, `Show`                                                      |
 | JSX Runtime | `jsx`, `jsxs`, `jsxDEV`, `h`, `createElement`, `Fragment`                                                 |

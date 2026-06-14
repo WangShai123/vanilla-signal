@@ -104,7 +104,7 @@ render(
 | Lifecycle      | `createRoot`, `createScope`, `onCleanup`, `onDispose`, `onMount`, `getOwner`                              |
 | Error Handling | `createErrorBoundary`, `catchError`                                                                       |
 | Store          | `createStore`, `createDeepStore`, `createReadonly`, `produce`, `unwrap`, `snapshot`                       |
-| Async          | `createResource`, `createQuery`, `createSuspense`                                                         |
+| Async          | `createResource`, `createSuspense`                                                                        |
 | DOM            | `insert`, `render`, `bindText`, `bindAttr`, `bindStyle`, `bindClass`, `bindShow`, `bindIf`, `bindList`    |
 | List Helpers   | `createListKey`, `createCompositeKey`, `For`, `Show`                                                      |
 | JSX Runtime    | `jsx`, `jsxs`, `jsxDEV`, `h`, `createElement`, `Fragment`                                                 |

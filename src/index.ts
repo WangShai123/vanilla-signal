@@ -19,10 +19,6 @@ export type Accessor<T = any> = (() => T) & {
   loading?: () => boolean;
   error?: () => any;
   latest?: () => any;
-  state?: any;
-  refetch?: (options?: any) => Promise<any>;
-  retry?: () => Promise<any>;
-  promise?: () => Promise<any> | null;
 };
 export type Setter<T = any> = (next: T | ((previous: T) => T)) => T;
 export type SignalTuple<T = any> = [Accessor<T>, Setter<T>];
@@ -89,13 +85,6 @@ interface ResourceControls<T = any> {
   reload: (value?: any) => Promise<T>;
   refetch: (value?: any) => Promise<T>;
 }
-interface QueryAccessor<T = any> extends Accessor<T | undefined> {
-  state: any;
-  refetch: (options?: any) => Promise<T | undefined>;
-  retry: () => Promise<T | undefined>;
-  promise: () => Promise<T | undefined> | null;
-}
-
 declare global {
   interface Window {
     __SIGNAL_DEVTOOLS__?: DevtoolsHook;
@@ -1823,174 +1812,6 @@ export function createResource<T = any>(
       },
     },
   ];
-}
-
-/**
- * 创建查询资源。
- *
- * query 提供接近常见数据请求库的状态字段，包括 pending/loading/fetching/success/error 与 retry。
- *
- * @param {Object|Function} options - 查询配置，或直接作为 queryFn 的函数。
- * @returns {Function} 查询读取函数，附带 state、refetch、retry、promise。
- */
-export function createQuery<T = any>(options: any): QueryAccessor<T> {
-  if (typeof options === 'function') {
-    options = { queryFn: options };
-  }
-
-  const {
-    enabled = true,
-    initialData,
-    keepPreviousData = true,
-    queryFn,
-    queryKey,
-    retry = 0,
-    retryDelay = (attempt: number) => Math.min(1000 * attempt, 3000),
-  } = options || {};
-
-  if (typeof queryFn !== 'function') {
-    throw new TypeError('createQuery requires a queryFn');
-  }
-
-  const state = createDeepStore({
-    data: initialData,
-    error: null,
-    failureCount: 0,
-    isError: false,
-    isFetching: false,
-    isLoading: false,
-    isPending: initialData === undefined,
-    isSuccess: initialData !== undefined,
-    status: initialData === undefined ? 'pending' : 'success',
-    updatedAt: initialData === undefined ? 0 : Date.now(),
-  });
-
-  let requestId: number = 0;
-  let currentPromise: Promise<T | undefined> | null = null;
-  let controller: AbortController | null = null;
-
-  function getKey(): any {
-    return access(queryKey);
-  }
-
-  function getEnabled(): boolean {
-    return !!access(enabled);
-  }
-
-  function waitDelay(
-    value: number | ((attempt: number) => number),
-    attempt: number
-  ): Promise<void> {
-    const delay = typeof value === 'function' ? value(attempt) : value;
-    return sleepFor(delay || 0);
-  }
-
-  async function execute({ force = false }: { force?: boolean } = {}): Promise<
-    T | undefined
-  > {
-    if (!force && !getEnabled()) return state.data;
-
-    const id = ++requestId;
-    const key = getKey();
-    controller?.abort?.();
-    controller =
-      typeof AbortController !== 'undefined' ? new AbortController() : null;
-
-    state.isFetching = true;
-    state.isLoading = state.data === undefined || !keepPreviousData;
-    state.isPending = state.data === undefined;
-    state.isError = false;
-    state.error = null;
-    state.status = state.data === undefined ? 'pending' : 'success';
-
-    let attempt = 0;
-
-    const run = async (): Promise<T | undefined> => {
-      attempt++;
-      try {
-        const data = await queryFn({
-          attempt,
-          queryKey: key,
-          signal: controller?.signal,
-        });
-
-        if (id !== requestId) return state.data;
-
-        state.data = data;
-        state.error = null;
-        state.failureCount = 0;
-        state.isError = false;
-        state.isFetching = false;
-        state.isLoading = false;
-        state.isPending = false;
-        state.isSuccess = true;
-        state.status = 'success';
-        state.updatedAt = Date.now();
-        return data;
-      } catch (error: any) {
-        if (id !== requestId && error?.name === 'AbortError') return state.data;
-
-        const shouldRetry =
-          typeof retry === 'function'
-            ? retry(attempt, error)
-            : attempt <= Number(retry || 0);
-
-        if (shouldRetry) {
-          await waitDelay(retryDelay, attempt);
-          if (id !== requestId) return state.data;
-          return run();
-        }
-
-        if (id === requestId) {
-          state.error = error;
-          state.failureCount = attempt;
-          state.isError = true;
-          state.isFetching = false;
-          state.isLoading = false;
-          state.isPending = false;
-          state.isSuccess = false;
-          state.status = 'error';
-        }
-
-        throw error;
-      }
-    };
-
-    currentPromise = run();
-    return currentPromise;
-  }
-
-  createEffect(() => {
-    getKey();
-    if (getEnabled()) execute().catch(() => undefined);
-  });
-
-  function read(): T | undefined {
-    return state.data;
-  }
-
-  (read as QueryAccessor<T>).state = state;
-  (read as QueryAccessor<T>).refetch = (options?: any) =>
-    execute({ ...options, force: true });
-  (read as QueryAccessor<T>).retry = () => execute({ force: true });
-  (read as QueryAccessor<T>).promise = () => currentPromise;
-
-  return read as QueryAccessor<T>;
-}
-
-/**
- * 等待指定毫秒数。
- *
- * 在 Node 环境下会尝试 unref timer，避免测试或脚本被 retry 延迟阻塞退出。
- *
- * @param {number} ms - 等待时间。
- * @returns {Promise<void>} 延迟完成的 Promise。
- */
-function sleepFor(ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    const timer = setTimeout(resolve, ms) as any;
-    timer?.unref?.();
-  });
 }
 
 /**

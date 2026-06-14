@@ -491,7 +491,11 @@ bindShow(panel, () => state.open);
 一句话：在注释锚点位置做条件插入和移除。
 
 ```js
-bindIf(anchor, () => state.open, () => jsx`<div>内容</div>`);
+bindIf(
+  anchor,
+  () => state.open,
+  () => jsx`<div>内容</div>`
+);
 ```
 
 适合：
@@ -647,64 +651,6 @@ createResource(fetcher, {
 - `suspense: true`：首次 loading 且无数据时，读取会抛出 Promise。
 - `throwErrors: true`：存在错误时，读取会抛出 error。
 
-### createQuery
-
-一句话：更适合业务页面的请求工具，带状态、重试、保留旧数据。
-
-```js
-const list = createQuery({
-  queryKey: () => state.keyword,
-  enabled: () => state.keyword.length > 0,
-  queryFn: async ({ queryKey, signal }) => {
-    const response = await fetch(`/api/search?q=${queryKey}`, { signal });
-    return response.json();
-  },
-});
-```
-
-适合：
-
-- 搜索列表。
-- 分页列表。
-- 详情卡片。
-- 仪表盘数据。
-
-常用状态：
-
-```js
-list.state.status;
-list.state.isLoading;
-list.state.isFetching;
-list.state.isError;
-list.state.isSuccess;
-list.state.error;
-list.state.failureCount;
-list.state.updatedAt;
-```
-
-常用控制：
-
-```js
-list.refetch();
-list.retry();
-list.promise();
-```
-
-关键选项：
-
-```js
-createQuery({
-  queryKey: () => state.keyword,
-  enabled: () => state.keyword.trim().length > 0,
-  keepPreviousData: true,
-  retry: 2,
-  retryDelay: (attempt) => attempt * 500,
-  queryFn: async ({ queryKey, signal, attempt }) => {
-    return fetchData(queryKey, signal, attempt);
-  },
-});
-```
-
 ### createSuspense
 
 一句话：捕获 Promise，先返回 fallback，Promise 完成后重新计算。
@@ -780,7 +726,7 @@ const boundary = createErrorBoundary(() => {
 7. `Show`
 8. `For`
 9. `createResource`
-10. `createQuery`
+10. `createSuspense`
 
 其他 API 等遇到场景再学。
 

@@ -6,7 +6,7 @@
 
 - 显示或隐藏：`Show`
 - 渲染数组：`For`
-- 请求数据：`createResource` 和 `createQuery`
+- 请求数据：`createResource`
 
 ## 开场口播
 
@@ -229,32 +229,30 @@ const [product, { state }] = createResource(id, async (currentId) => {
 
 适合详情页、tab 切换、分页等场景。
 
-## 7. createQuery：更偏业务的请求状态
+## 7. 搜索列表：用 createResource 处理请求状态
 
 ### 口播
 
-`createQuery` 更像一个面向业务页面的请求工具。它有更明确的状态，比如 `isLoading`、`isFetching`、`isError`、`isSuccess`，还支持重试。
+这一节我们用 `createResource` 写一个搜索列表。
 
-如果你要写搜索列表、详情卡片、仪表盘数据，可以优先考虑 `createQuery`。
+搜索列表的核心状态有三个：关键词、请求状态、搜索结果。关键词用 store 保存，请求和结果交给 resource 管理。
 
 ### 代码
 
 ```js
-const { createDeepStore, createQuery, For, render, jsx } = signal;
+const { createDeepStore, createResource, For, render, jsx } = signal;
 
 const state = createDeepStore({
   keyword: '',
 });
 
-const products = createQuery({
-  queryKey: () => state.keyword.trim(),
-  enabled: () => state.keyword.trim().length > 0,
-  keepPreviousData: true,
-  retry: 1,
-  queryFn: async ({ queryKey, signal }) => {
+const [products, { state: resourceState, reload }] = createResource(
+  () => state.keyword.trim(),
+  async (keyword) => {
+    if (!keyword) return [];
+
     const response = await fetch(
-      `/api/search?q=${encodeURIComponent(queryKey)}`,
-      { signal }
+      `/api/search?q=${encodeURIComponent(keyword)}`
     );
 
     if (!response.ok) {
@@ -263,7 +261,8 @@ const products = createQuery({
 
     return response.json();
   },
-});
+  { initialValue: [] }
+);
 ```
 
 ### 渲染
@@ -281,13 +280,15 @@ render(
       >
 
       ${() =>
-        products.state.isLoading
+        resourceState.loading
           ? jsx`<p>搜索中...</p>`
-          : products.state.isError
+          : resourceState.error
             ? jsx`
                 <div>
-                  <p>${() => products.state.error.message}</p>
-                  <button onClick=${() => products.retry()}>重试</button>
+                  <p>${() => resourceState.error.message}</p>
+                  <button onClick=${() => reload().catch(() => undefined)}>
+                    重试
+                  </button>
                 </div>
               `
             : For({
@@ -309,23 +310,23 @@ render(
 
 ### 讲解
 
-这里 `queryKey` 是搜索关键词。
+这里第一个参数 `() => state.keyword.trim()` 是请求来源。
 
-`enabled` 表示什么时候允许请求。关键词为空时不请求。
+关键词变化时，resource 会重新请求。
 
-`keepPreviousData` 表示新请求进行中时，可以保留旧数据，页面不会突然清空。
+关键词为空时，我们直接返回空数组。
 
-`queryFn` 里能拿到 `signal`，可以交给 `fetch`，用于中断过期请求。
+`resourceState.loading` 负责 loading，`resourceState.error` 负责错误，`reload` 用来重试。
 
-## 8. createResource 和 createQuery 怎么选
+## 8. createResource 适合哪些异步场景
 
 ### 口播
 
 简单记法：
 
-如果你只是需要一个异步值，用 `createResource`。
+只要你的 UI 需要从一个异步函数拿到数据，并且关心 loading、error 和重新加载，就可以先考虑 `createResource`。
 
-如果你在做业务列表、搜索、详情卡片，并且关心状态、重试、保留旧数据，用 `createQuery`。
+它适合用户信息、详情数据、搜索结果、分页列表、仪表盘卡片这类“一个参数对应一份数据”的场景。
 
 ## 9. 本集常见坑
 
@@ -343,7 +344,7 @@ render(
 对象数组建议一定写 `key`。
 
 ```js
-key: (item) => item.id
+key: (item) => item.id;
 ```
 
 ### 坑三：在 children 里忘记调用 item()
@@ -359,6 +360,5 @@ children: (item) => jsx`<div>${() => item().title}</div>`;
 - `Show` 处理条件渲染。
 - `For` 处理列表渲染和空状态。
 - `createResource` 管理基础异步数据。
-- `createQuery` 管理更完整的业务请求状态。
 
 下一集我们会把前面所有知识串起来，做一个完整的小项目。

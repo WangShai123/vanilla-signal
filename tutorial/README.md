@@ -15,7 +15,7 @@
 | 7    | `07-调度-监听-选择器.md`         | `createWatch`、`createSelector`、`batch`、`untrack`、`flushSync`、`startTransition`          | 15-20 分钟 |
 | 8    | `08-生命周期-作用域-错误处理.md` | `createRoot`、`createScope`、`onCleanup`、`onMount`、`createErrorBoundary`、`catchError`     | 15-20 分钟 |
 | 9    | `09-dom底层api与老项目增强.md`   | `insert`、`bindText`、`bindAttr`、`bindStyle`、`bindClass`、`bindShow`、`bindIf`、`bindList` | 15-20 分钟 |
-| 10   | `10-高级异步-createSuspense.md`  | `createResource` 高级选项、`createQuery` 重试与竞态、`createSuspense`                        | 18-25 分钟 |
+| 10   | `10-高级异步-createSuspense.md`  | `createResource` 高级选项、异步边界、`createSuspense`                                        | 18-25 分钟 |
 | 附录 | `api-场景速查.md`                | API 用法和适用场景速查                                                                       | 随课件使用 |
 
 ## 录制建议
@@ -62,7 +62,7 @@ import {
 - `jsx`...`：无构建环境下，用接近 HTML 的方式创建 DOM。
 - `render`：把响应式 UI 挂到页面上，并负责清理。
 - `Show` / `For`：用组件化写法处理条件和列表。
-- `createResource` / `createQuery`：把请求的 loading、error、data 管起来。
+- `createResource`：把请求的 loading、error、data 管起来。
 - `createSuspense`：让会抛 Promise 的异步读取先显示 fallback，完成后自动恢复内容。
 - `createRoot` / `createScope`：管理一组响应式逻辑的创建和销毁。
 - `bindText` / `bindList` 等底层 API：给已有 DOM 或老项目做局部响应式增强。

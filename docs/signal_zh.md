@@ -100,7 +100,7 @@ render(
 | 生命周期    | `createRoot`, `createScope`, `onCleanup`, `onDispose`, `onMount`, `getOwner`                              |
 | 错误处理    | `createErrorBoundary`, `catchError`                                                                       |
 | Store       | `createStore`, `createDeepStore`, `createReadonly`, `produce`, `unwrap`, `snapshot`                       |
-| 异步        | `createResource`, `createQuery`, `createSuspense`                                                         |
+| 异步        | `createResource`, `createSuspense`                                                                        |
 | DOM         | `insert`, `render`, `bindText`, `bindAttr`, `bindStyle`, `bindClass`, `bindShow`, `bindIf`, `bindList`    |
 | 列表辅助    | `createListKey`, `createCompositeKey`, `For`, `Show`                                                      |
 | JSX Runtime | `jsx`, `jsxs`, `jsxDEV`, `h`, `createElement`, `Fragment`                                                 |
@@ -680,102 +680,9 @@ render(
 );
 ```
 
-### createQuery
+### 高级 Query API
 
-`createQuery` 是更偏业务 UI 的请求 API，内置 status、loading、error、retry/refetch 状态，适合列表、详情、仪表盘卡片等异步区域。
-
-```js
-const query = createQuery({
-  queryKey: () => state.keyword,
-  queryFn: async ({ queryKey, signal, attempt }) => {
-    const response = await fetch(
-      `/api/search?q=${encodeURIComponent(queryKey)}`,
-      {
-        signal,
-      }
-    );
-    return response.json();
-  },
-  retry: 2,
-  retryDelay: (attempt) => attempt * 500,
-});
-```
-
-读取数据：
-
-```js
-query();
-query.state.status; // pending | success | error
-query.state.isLoading;
-query.state.isFetching;
-query.state.isError;
-query.state.isSuccess;
-query.state.error;
-query.state.failureCount;
-query.state.updatedAt;
-```
-
-控制方法：
-
-```js
-query.refetch();
-query.retry();
-query.promise();
-```
-
-#### Loading / 骨架屏 / 重试示例
-
-```js
-const products = createQuery({
-  retry: 0,
-  queryFn: async () => {
-    const response = await fetch('/api/products');
-    if (!response.ok) throw new Error('Request failed');
-    return response.json();
-  },
-});
-
-render(
-  () => jsx`
-  <section>
-    ${() =>
-      products.state.isLoading
-        ? jsx`<div class="skeleton">Loading products...</div>`
-        : products.state.isError
-          ? jsx`
-          <div class="error">
-            ${() => products.state.error?.message || '请求失败'}
-            <button onClick=${() => products.retry()}>重试</button>
-          </div>
-        `
-          : jsx`
-          <ul>
-            ${For({
-              each: () => products() || [],
-              key: (item) => item.id,
-              children: (item) => jsx`<li>${() => item().name}</li>`,
-            })}
-          </ul>
-        `}
-  </section>
-`,
-  app
-);
-```
-
-选项：
-
-```js
-createQuery({
-  queryKey, // 普通值或 accessor；变化会重新请求
-  queryFn, // ({ queryKey, signal, attempt }) => Promise<data>
-  enabled: true, // 普通值或 accessor；false 时不自动请求
-  initialData, // 初始数据
-  keepPreviousData: true,
-  retry: 0, // 数字或 (attempt, error) => boolean
-  retryDelay: (attempt) => Math.min(1000 * attempt, 3000),
-});
-```
+`createQuery` 已从 `vanilla-signal` 中移除。内置异步原语请使用 `createResource`。如果需要 query key、retry、stale data、请求缓存等更完整的查询能力，请使用独立包 `vanilla-signal-query`。
 
 ### createSuspense
 
@@ -1197,16 +1104,17 @@ const state = createDeepStore({
   keyword: '',
 });
 
-const result = createQuery({
-  queryKey: () => state.keyword,
-  enabled: () => state.keyword.trim().length > 0,
-  queryFn: async ({ queryKey }) => {
+const [result, { state: resultState, reload }] = createResource(
+  () => state.keyword.trim(),
+  async (queryKey) => {
+    if (!queryKey) return [];
     const response = await fetch(
       `/api/search?q=${encodeURIComponent(queryKey)}`
     );
     return response.json();
   },
-});
+  { initialValue: [] }
+);
 
 render(
   () => jsx`
@@ -1216,10 +1124,10 @@ render(
     }}>
 
     ${() =>
-      result.state.isLoading
+      resultState.loading
         ? jsx`<div>搜索中...</div>`
-        : result.state.isError
-          ? jsx`<button onClick=${() => result.retry()}>重试</button>`
+        : resultState.error
+          ? jsx`<button onClick=${() => reload().catch(() => undefined)}>重试</button>`
           : For({
               each: () => result() || [],
               key: (item) => item.id,
@@ -1254,7 +1162,7 @@ render(
 - deep store 只递归普通对象和数组；`Map`, `Set`, `Date`, class 实例按普通值处理。
 - `bindList` 的 anchor 必须已在 DOM 中。
 - 异步请求 API 会处理“最新请求优先”，过期请求不会覆盖新数据。
-- `createQuery` 初始自动请求失败会吞掉未处理 Promise rejection，但错误会保存在 `query.state.error` 中；手动 `retry/refetch` 返回的 Promise 仍可由调用方 `await/catch`。
+- query key、retry、stale data、请求缓存等查询专属能力由独立包 `vanilla-signal-query` 提供。
 
 ## API 速查
 
@@ -1297,7 +1205,6 @@ snapshot(value)
 // Async
 createResource(fetcher, options?)
 createResource(source, fetcher, options?)
-createQuery(options | queryFn)
 createSuspense(fn, fallback)
 
 // DOM
