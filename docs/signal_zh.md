@@ -15,21 +15,21 @@
 npm:
 
 ```bash
-npm install vanilla-signal
+npm install vanillaSignal
 ```
 
 script:
 
 ```html
 <!-- umd 全局变量：signal -->
-<script src="https://unpkg.com/vanilla-signal/dist/index.umd.js"></script>
+<script src="https://unpkg.com/vanillaSignal/dist/index.umd.js"></script>
 <script>
   const { createSignal } = vanillaSignal;
 </script>
 
 <!-- esm 模块导入 -->
 <script type="module">
-  import { createSignal } from 'https://unpkg.com/vanilla-signal/dist/index.js';
+  import { createSignal } from 'https://unpkg.com/vanillaSignal/dist/index.js';
 </script>
 ```
 
@@ -682,7 +682,7 @@ render(
 
 ### 高级 Query API
 
-`createQuery` 已从 `vanilla-signal` 中移除。内置异步原语请使用 `createResource`。如果需要 query key、retry、stale data、请求缓存等更完整的查询能力，请使用独立包 `vanilla-signal-query`。
+`createQuery` 已从 `vanillaSignal` 中移除。内置异步原语请使用 `createResource`。如果需要 query key、retry、stale data、请求缓存等更完整的查询能力，请使用独立包 `vanillaSignal-query`。
 
 ### createSuspense
 
@@ -1162,7 +1162,7 @@ render(
 - deep store 只递归普通对象和数组；`Map`, `Set`, `Date`, class 实例按普通值处理。
 - `bindList` 的 anchor 必须已在 DOM 中。
 - 异步请求 API 会处理“最新请求优先”，过期请求不会覆盖新数据。
-- query key、retry、stale data、请求缓存等查询专属能力由独立包 `vanilla-signal-query` 提供。
+- query key、retry、stale data、请求缓存等查询专属能力由独立包 `vanillaSignal-query` 提供。
 
 ## API 速查
 

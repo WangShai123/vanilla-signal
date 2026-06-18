@@ -15,21 +15,21 @@
 npm:
 
 ```bash
-npm install vanilla-signal
+npm install vanillaSignal
 ```
 
 script:
 
 ```html
 <!-- umd GlobalName: signal -->
-<script src="https://unpkg.com/vanilla-signal/dist/index.umd.js"></script>
+<script src="https://unpkg.com/vanillaSignal/dist/index.umd.js"></script>
 <script>
   const { createSignal } = vanillaSignal;
 </script>
 
 <!-- es module -->
 <script type="module">
-  import { createSignal } from 'https://unpkg.com/vanilla-signal/dist/index.js';
+  import { createSignal } from 'https://unpkg.com/vanillaSignal/dist/index.js';
 </script>
 ```
 

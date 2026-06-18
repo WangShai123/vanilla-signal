@@ -1,18 +1,18 @@
-# 第 1 集：认识 vanilla-signal
+# 第 1 集：认识 vanillaSignal
 
 ## 本集目标
 
-让观众理解 `vanilla-signal` 解决什么问题，以及它和直接操作 DOM、React/Vue 这类框架的区别。
+让观众理解 `vanillaSignal` 解决什么问题，以及它和直接操作 DOM、React/Vue 这类框架的区别。
 
 ## 开场口播
 
-大家好，这一集我们来认识一个很轻量的响应式 UI 工具：`vanilla-signal`。
+大家好，这一集我们来认识一个很轻量的响应式 UI 工具：`vanillaSignal`。
 
 如果你刚开始写前端，可能经常会遇到这样的代码：点一下按钮，先改一个变量，然后手动找到页面上的某个元素，再改 `textContent`，再改 `className`，再控制另一个按钮是否禁用。
 
 一开始这没问题。但当一个状态要影响页面上很多地方，或者一个页面里有表单、列表、弹窗、请求状态时，手动操作 DOM 很快就会变得很乱。
 
-`vanilla-signal` 要解决的就是这个问题：我们还是写原生 JavaScript，还是操作真实 DOM，但状态变化以后，页面上用到这个状态的地方会自动更新。
+`vanillaSignal` 要解决的就是这个问题：我们还是写原生 JavaScript，还是操作真实 DOM，但状态变化以后，页面上用到这个状态的地方会自动更新。
 
 ## 屏幕操作
 
@@ -23,7 +23,7 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <title>vanilla-signal demo</title>
+    <title>vanillaSignal demo</title>
     <script src="../dist/index.umd.js"></script>
   </head>
   <body>
@@ -102,7 +102,7 @@ button.addEventListener('click', () => {
 document.getElementById('app').append(button);
 ```
 
-然后展示 `vanilla-signal` 写法：
+然后展示 `vanillaSignal` 写法：
 
 ```js
 const [count, setCount] = createSignal(0);
@@ -121,9 +121,9 @@ render(
 
 传统写法的问题不在于它不能用，而是在状态变多以后，你要记住所有受影响的 DOM。
 
-`vanilla-signal` 的写法是：谁用到了状态，谁自动更新。我们把注意力放在“状态是什么”和“页面长什么样”，而不是“每次变化要手动改哪些 DOM”。
+`vanillaSignal` 的写法是：谁用到了状态，谁自动更新。我们把注意力放在“状态是什么”和“页面长什么样”，而不是“每次变化要手动改哪些 DOM”。
 
-## 适合使用 vanilla-signal 的场景
+## 适合使用 vanillaSignal 的场景
 
 - 普通后台页面里的筛选、表单、弹窗、抽屉。
 - 商品 SKU 表、库存表、报价表这种有列表和统计的 UI。
@@ -137,12 +137,12 @@ render(
 
 如果你要做大型工程化应用，也要考虑路由、组件体系、测试、团队规范等配套能力。
 
-所以这门教程的定位很清楚：用 `vanilla-signal` 帮初级前端更轻松地写原生 UI。
+所以这门教程的定位很清楚：用 `vanillaSignal` 帮初级前端更轻松地写原生 UI。
 
 ## 本集结尾
 
 这一集我们先记住一句话：
 
-> `vanilla-signal` 是一个让原生 JavaScript 页面具备响应式更新能力的小型运行时。
+> `vanillaSignal` 是一个让原生 JavaScript 页面具备响应式更新能力的小型运行时。
 
 下一集我们开始学习三个最核心的 API：`createSignal`、`createEffect` 和 `createMemo`。

@@ -2,7 +2,7 @@
 
 ## 本集目标
 
-这一集补齐 `vanilla-signal` 主包里的异步进阶用法：
+这一集补齐 `vanillaSignal` 主包里的异步进阶用法：
 
 - `createResource` 的 `initialValue`、`loadingDelay`、`mutate`、`reload`、`refetch`、`suspense`、`throwErrors`
 - `createSuspense` 的工作方式和使用场景
@@ -390,4 +390,4 @@ Suspense 是高级组织方式，不是所有请求都需要。
 - `throwErrors` 和 `suspense` 可以把错误或 Promise 交给外层处理。
 - `createSuspense` 捕获 Promise，先显示 fallback，完成后重新渲染。
 
-到这里，`vanilla-signal` 的核心、DOM、Store、生命周期和异步能力已经形成完整闭环。
+到这里，`vanillaSignal` 的核心、DOM、Store、生命周期和异步能力已经形成完整闭环。

@@ -2,7 +2,7 @@
 
 ## 本集目标
 
-这一集讲 `vanilla-signal` 的底层 DOM API。
+这一集讲 `vanillaSignal` 的底层 DOM API。
 
 这些 API 不一定比 `jsx`...` 更常用，但在老项目改造、局部增强、工具封装时很有价值：
 
@@ -364,4 +364,4 @@ bindClass(root, 'is-hot', () => count() > 10);
 - 底层列表用 `bindList`。
 - key 可以用 `createListKey` 或 `createCompositeKey` 辅助生成。
 
-底层 API 的意义是让 `vanilla-signal` 不只能写新页面，也能进入已有页面的一小块区域，逐步改善交互代码。
+底层 API 的意义是让 `vanillaSignal` 不只能写新页面，也能进入已有页面的一小块区域，逐步改善交互代码。

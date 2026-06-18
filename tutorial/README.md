@@ -1,12 +1,12 @@
-# vanilla-signal UI 教程视频脚本
+# vanillaSignal UI 教程视频脚本
 
-这套脚本面向初级前端程序员，目标不是把 API 背一遍，而是让观众理解：为什么原生 DOM 写复杂交互会累，`vanilla-signal` 如何用 signal、effect、memo、store、JSX 模板把 UI 状态变得更直观。
+这套脚本面向初级前端程序员，目标不是把 API 背一遍，而是让观众理解：为什么原生 DOM 写复杂交互会累，`vanillaSignal` 如何用 signal、effect、memo、store、JSX 模板把 UI 状态变得更直观。
 
 ## 推荐视频结构
 
 | 集数 | 文件                             | 主题                                                                                         | 建议时长   |
 | ---- | -------------------------------- | -------------------------------------------------------------------------------------------- | ---------- |
-| 1    | `01-认识-vanilla-signal.md`      | 从原生 DOM 痛点引出细粒度响应式                                                              | 8-12 分钟  |
+| 1    | `01-认识-vanillaSignal.md`       | 从原生 DOM 痛点引出细粒度响应式                                                              | 8-12 分钟  |
 | 2    | `02-signal-effect-memo.md`       | 掌握 `createSignal`、`createEffect`、`createMemo`                                            | 12-16 分钟 |
 | 3    | `03-render-jsx-dom.md`           | 用 `render`、`jsx``、事件和动态属性构建 UI                                                   | 12-16 分钟 |
 | 4    | `04-store-form-list.md`          | 用 `createDeepStore` 写表单、列表、派生统计                                                  | 15-20 分钟 |
@@ -51,7 +51,7 @@ import {
 
 可以把整套教程讲成一句话：
 
-> `vanilla-signal` 让我们在不引入大框架的情况下，用“状态驱动 UI”的方式写原生页面。
+> `vanillaSignal` 让我们在不引入大框架的情况下，用“状态驱动 UI”的方式写原生页面。
 
 观众应该带走的核心心智模型：
 

@@ -20,7 +20,7 @@ const { render, jsx } = vanillaSignal;
 render(
   () => jsx`
     <section>
-      <h1>Hello vanilla-signal</h1>
+      <h1>Hello vanillaSignal</h1>
     </section>
   `,
   document.getElementById('app')
@@ -43,7 +43,7 @@ render(
 
 浏览器不能直接运行 `<div></div>` 这种 JSX 语法。除非你用了 Babel、Vite 之类的编译工具。
 
-所以 `vanilla-signal` 提供了 tagged template 写法，也就是：
+所以 `vanillaSignal` 提供了 tagged template 写法，也就是：
 
 ```js
 jsx`<div>内容</div>`;

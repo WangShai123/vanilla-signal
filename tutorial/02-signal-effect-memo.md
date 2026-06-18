@@ -10,7 +10,7 @@
 
 ## 开场口播
 
-上一集我们知道了，`vanilla-signal` 的核心是“状态变化，页面自动更新”。
+上一集我们知道了，`vanillaSignal` 的核心是“状态变化，页面自动更新”。
 
 这一集我们把这个核心拆开看。你只要先掌握三个 API，就能写出大多数基础交互：`createSignal`、`createEffect`、`createMemo`。
 
@@ -59,7 +59,7 @@ console.log(count()); // 2
 ```js
 const { createSignal, createEffect } = vanillaSignal;
 
-const [name, setName] = createSignal('vanilla-signal');
+const [name, setName] = createSignal('vanillaSignal');
 
 createEffect(() => {
   document.title = `正在学习 ${name()}`;

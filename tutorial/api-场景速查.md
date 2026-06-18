@@ -1,4 +1,4 @@
-# vanilla-signal API 场景速查
+# vanillaSignal API 场景速查
 
 这份内容适合放在教程最后，也适合做成课件截图。每个 API 都按“它解决什么问题、怎么用、适合什么场景”来讲。
 

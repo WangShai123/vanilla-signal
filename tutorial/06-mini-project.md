@@ -41,7 +41,7 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <title>vanilla-signal task board</title>
+    <title>vanillaSignal task board</title>
     <script src="../dist/index.umd.js"></script>
     <style>
       body {
@@ -457,8 +457,8 @@ render(
 
 ## 本集结尾
 
-到这里，我们已经能用 `vanilla-signal` 写出一个完整的小 UI。
+到这里，我们已经能用 `vanillaSignal` 写出一个完整的小 UI。
 
 你不需要先学复杂框架，也能用状态驱动的方式组织页面。
 
-这就是 `vanilla-signal` 最适合初级前端的地方：保留原生 JavaScript 的直接，同时让 UI 更新变得清楚、自动、可维护。
+这就是 `vanillaSignal` 最适合初级前端的地方：保留原生 JavaScript 的直接，同时让 UI 更新变得清楚、自动、可维护。

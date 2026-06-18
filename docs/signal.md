@@ -15,21 +15,21 @@
 npm:
 
 ```bash
-npm install vanilla-signal
+npm install vanillaSignal
 ```
 
 script:
 
 ```html
 <!-- umd GlobalName: signal -->
-<script src="https://unpkg.com/vanilla-signal/dist/index.umd.js"></script>
+<script src="https://unpkg.com/vanillaSignal/dist/index.umd.js"></script>
 <script>
   const { createSignal } = vanillaSignal;
 </script>
 
 <!-- es module -->
 <script type="module">
-  import { createSignal } from 'https://unpkg.com/vanilla-signal/dist/index.js';
+  import { createSignal } from 'https://unpkg.com/vanillaSignal/dist/index.js';
 </script>
 ```
 
@@ -682,7 +682,7 @@ render(
 
 ### Advanced Query APIs
 
-`createQuery` has been removed from `vanilla-signal`. Use `createResource` for the built-in async primitive. For query-key, retry, stale data, and request cache workflows, use the standalone `vanilla-signal-query` package.
+`createQuery` has been removed from `vanillaSignal`. Use `createResource` for the built-in async primitive. For query-key, retry, stale data, and request cache workflows, use the standalone `vanillaSignal-query` package.
 
 ### createSuspense
 
@@ -1162,7 +1162,7 @@ render(
 - Deep store only recursively proxies plain objects and arrays; `Map`, `Set`, `Date`, class instances are treated as plain values.
 - `bindList`'s anchor must already be in DOM.
 - Async request APIs handle "latest request priority"; expired requests won't override new data.
-- Query-specific workflows such as query keys, retries, stale data and cache policies live in the standalone `vanilla-signal-query` package.
+- Query-specific workflows such as query keys, retries, stale data and cache policies live in the standalone `vanillaSignal-query` package.
 
 ## API Quick Reference
 
