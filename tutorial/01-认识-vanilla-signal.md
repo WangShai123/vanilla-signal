@@ -29,7 +29,7 @@
   <body>
     <div id="app"></div>
     <script>
-      const { createSignal, render, jsx } = signal;
+      const { createSignal, render, jsx } = vanillaSignal;
 
       const [count, setCount] = createSignal(0);
 

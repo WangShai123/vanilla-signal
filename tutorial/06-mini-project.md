@@ -165,7 +165,7 @@
         jsx,
         For,
         Show,
-      } = signal;
+      } = vanillaSignal;
     </script>
   </body>
 </html>

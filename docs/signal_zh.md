@@ -24,7 +24,7 @@ script:
 <!-- umd 全局变量：signal -->
 <script src="https://unpkg.com/vanilla-signal/dist/index.umd.js"></script>
 <script>
-  const { createSignal } = signal;
+  const { createSignal } = vanillaSignal;
 </script>
 
 <!-- esm 模块导入 -->

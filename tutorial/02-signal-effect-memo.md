@@ -25,7 +25,7 @@
 ### 代码
 
 ```js
-const { createSignal } = signal;
+const { createSignal } = vanillaSignal;
 
 const [count, setCount] = createSignal(0);
 
@@ -57,7 +57,7 @@ console.log(count()); // 2
 ### 代码
 
 ```js
-const { createSignal, createEffect } = signal;
+const { createSignal, createEffect } = vanillaSignal;
 
 const [name, setName] = createSignal('vanilla-signal');
 
@@ -92,7 +92,7 @@ createEffect(() => {
 ### 场景二：绑定和清理事件
 
 ```js
-const { createEffect, onCleanup } = signal;
+const { createEffect, onCleanup } = vanillaSignal;
 
 createEffect(() => {
   const handler = () => {
@@ -126,7 +126,7 @@ createEffect(() => {
 ### 代码
 
 ```js
-const { createSignal, createMemo, createEffect } = signal;
+const { createSignal, createMemo, createEffect } = vanillaSignal;
 
 const [price, setPrice] = createSignal(99);
 const [count, setCount] = createSignal(2);
@@ -189,7 +189,7 @@ createEffect(() => {
 <div id="app"></div>
 <script src="../dist/index.umd.js"></script>
 <script>
-  const { createSignal, createMemo, render, jsx } = signal;
+  const { createSignal, createMemo, render, jsx } = vanillaSignal;
 
   const [count, setCount] = createSignal(0);
 

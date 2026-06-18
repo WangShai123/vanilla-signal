@@ -27,7 +27,7 @@
 ### 代码
 
 ```js
-const { createSignal, Show, render, jsx } = signal;
+const { createSignal, Show, render, jsx } = vanillaSignal;
 
 const [loggedIn, setLoggedIn] = createSignal(false);
 
@@ -88,7 +88,7 @@ Show({
 ### 代码
 
 ```js
-const { createDeepStore, For, render, jsx } = signal;
+const { createDeepStore, For, render, jsx } = vanillaSignal;
 
 const state = createDeepStore({
   todos: [
@@ -168,7 +168,7 @@ For({
 ### 代码
 
 ```js
-const { createResource, render, jsx } = signal;
+const { createResource, render, jsx } = vanillaSignal;
 
 const [user, { state, reload }] = createResource(async () => {
   const response = await fetch('/api/user');
@@ -240,7 +240,7 @@ const [product, { state }] = createResource(id, async (currentId) => {
 ### 代码
 
 ```js
-const { createDeepStore, createResource, For, render, jsx } = signal;
+const { createDeepStore, createResource, For, render, jsx } = vanillaSignal;
 
 const state = createDeepStore({
   keyword: '',

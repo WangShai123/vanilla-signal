@@ -27,7 +27,7 @@
 ### 代码
 
 ```js
-const { createDeepStore, createEffect } = signal;
+const { createDeepStore, createEffect } = vanillaSignal;
 
 const state = createDeepStore({
   user: {
@@ -58,7 +58,7 @@ state.user.profile.city = '上海';
 ### 代码
 
 ```js
-const { createDeepStore, createMemo, render, jsx } = signal;
+const { createDeepStore, createMemo, render, jsx } = vanillaSignal;
 
 const form = createDeepStore({
   title: '',
@@ -205,7 +205,7 @@ const lowStockCount = createMemo(() => {
 ### 代码
 
 ```js
-const { For } = signal;
+const { For } = vanillaSignal;
 
 render(
   () => jsx`
@@ -308,7 +308,7 @@ function sortByStock() {
 ### 代码
 
 ```js
-const { produce } = signal;
+const { produce } = vanillaSignal;
 
 produce(state, (draft) => {
   draft.rows.forEach((row) => {
@@ -330,7 +330,7 @@ produce(state, (draft) => {
 ### 代码
 
 ```js
-const { snapshot } = signal;
+const { snapshot } = vanillaSignal;
 
 async function submit() {
   const payload = snapshot(form);

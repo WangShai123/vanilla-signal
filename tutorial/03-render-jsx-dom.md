@@ -15,7 +15,7 @@
 ### 代码
 
 ```js
-const { render, jsx } = signal;
+const { render, jsx } = vanillaSignal;
 
 render(
   () => jsx`
@@ -56,7 +56,7 @@ jsx`<div>内容</div>`;
 ### 代码
 
 ```js
-const { createSignal, render, jsx } = signal;
+const { createSignal, render, jsx } = vanillaSignal;
 
 const [name, setName] = createSignal('小明');
 
@@ -247,7 +247,7 @@ const node = jsx('button', {
 <div id="app"></div>
 <script src="../dist/index.umd.js"></script>
 <script>
-  const { createSignal, render, jsx } = signal;
+  const { createSignal, render, jsx } = vanillaSignal;
 
   const [name, setName] = createSignal('');
   const [loggedIn, setLoggedIn] = createSignal(false);

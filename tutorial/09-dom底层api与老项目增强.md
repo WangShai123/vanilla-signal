@@ -4,7 +4,7 @@
 
 这一集讲 `vanilla-signal` 的底层 DOM API。
 
-这些 API 不一定比 `jsx``...`` 更常用，但在老项目改造、局部增强、工具封装时很有价值：
+这些 API 不一定比 `jsx`...` 更常用，但在老项目改造、局部增强、工具封装时很有价值：
 
 - `insert`
 - `bindText`
@@ -21,7 +21,7 @@
 
 ## 开场口播
 
-前面我们主要用 `render` 和 `jsx``...`` 写新 UI。
+前面我们主要用 `render` 和 `jsx`...` 写新 UI。
 
 但真实工作中，经常不是从零写页面。
 
@@ -41,7 +41,7 @@
 ```
 
 ```js
-const { createSignal, insert } = signal;
+const { createSignal, insert } = vanillaSignal;
 
 const [count, setCount] = createSignal(0);
 
@@ -298,10 +298,7 @@ document.body.append(node);
 
 ```js
 const nodes = Fragment({
-  children: [
-    jsx`<span>左侧</span>`,
-    jsx`<span>右侧</span>`,
-  ],
+  children: [jsx`<span>左侧</span>`, jsx`<span>右侧</span>`],
 });
 ```
 
@@ -361,7 +358,7 @@ bindClass(root, 'is-hot', () => count() > 10);
 
 这一集我们学会了：
 
-- 新 UI 优先用 `render` 和 `jsx``...``。
+- 新 UI 优先用 `render` 和 `jsx`...`。
 - 老 DOM 局部增强可以用 `bindText`、`bindAttr`、`bindClass` 等 API。
 - 条件块用 `bindIf`。
 - 底层列表用 `bindList`。
