@@ -14,15 +14,15 @@
     "umd",
     "vanilla"
   ],
-  "homepage": "https://github.com/WangShai123/vanillaSignal",
+  "homepage": "https://github.com/WangShai123/vanilla-signal",
   "bugs": {
-    "url": "https://github.com/WangShai123/vanillaSignal/issues"
+    "url": "https://github.com/WangShai123/vanilla-signal/issues"
   },
   "license": "ISC",
   "author": "Wang Shai <hiwangshai@gmail.com>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/WangShai123/vanillaSignal.git"
+    "url": "git+https://github.com/WangShai123/vanilla-signal.git"
   },
   "files": [
     "dist"
