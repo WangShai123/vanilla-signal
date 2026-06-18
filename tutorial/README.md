@@ -29,7 +29,7 @@
 <script src="./dist/index.umd.js"></script>
 <script>
   const { createSignal, createMemo, createDeepStore, render, jsx, For, Show } =
-    signal;
+    vanillaSignal;
 </script>
 ```
 
