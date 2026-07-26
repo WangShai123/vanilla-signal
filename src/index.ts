@@ -926,13 +926,15 @@ export function createMemo<T = any>(
  * @param {boolean} [options.defer=false] - 是否跳过首次回调。
  * @returns {Object} 底层 effect 计算节点。
  */
-export function createWatch(
-  source: MaybeAccessor | MaybeAccessor[],
-  fn: (next: any, previous: any) => void,
+export function createWatch<T>(
+  source: MaybeAccessor<T> | Array<MaybeAccessor<T>>,
+  fn: (next: T | T[], previous: T | T[] | undefined) => void,
   options: EffectOptions = {}
 ): Computation {
-  const sources = Array.isArray(source) ? source : [source];
-  let previous: any;
+  const sources: Array<MaybeAccessor<T>> = Array.isArray(source)
+    ? source
+    : [source];
+  let previous: T | T[] | undefined;
   let initialized: boolean = false;
 
   return createEffect(() => {

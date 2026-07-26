@@ -2,7 +2,7 @@ import { defineConfig } from 'vite-plus';
 
 export default defineConfig({
   pack: {
-    entry: 'src/index.js',
+    entry: 'src/index.ts',
     outDir: 'dist',
     format: ['esm', 'umd'],
     globalName: 'vanillaSignal',
@@ -15,9 +15,7 @@ export default defineConfig({
         js: format === 'es' ? '.js' : '.js',
       };
     },
-    dts: {
-      tsgo: true,
-    },
+    dts: true,
     exports: true,
   },
 
