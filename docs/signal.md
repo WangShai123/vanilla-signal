@@ -29,7 +29,7 @@ script:
 
 <!-- es module -->
 <script type="module">
-  import { createSignal } from 'https://unpkg.com/vanillaSignal/dist/index.js';
+  import { createSignal } from "https://unpkg.com/vanillaSignal/dist/index.js";
 </script>
 ```
 
@@ -67,7 +67,7 @@ dispose();
 ```js
 const state = createDeepStore({
   rows: [],
-  filter: '',
+  filter: "",
 });
 
 const visibleRows = createMemo(() => {
@@ -87,7 +87,7 @@ render(
     })}
   </section>
 `,
-  document.getElementById('app')
+  document.getElementById("app"),
 );
 ```
 
@@ -119,7 +119,7 @@ Used to store the most basic reactive values.
 const [count, setCount] = createSignal(0);
 
 createEffect(() => {
-  console.log('count:', count());
+  console.log("count:", count());
 });
 
 setCount(1);
@@ -162,7 +162,7 @@ effect.dispose()
 When dependencies read within the effect change, the effect will re-run.
 
 ```js
-const [name, setName] = createSignal('JUI');
+const [name, setName] = createSignal("JUI");
 
 createEffect(() => {
   document.title = `Hello ${name()}`;
@@ -174,7 +174,7 @@ Clean up previous run:
 ```js
 createEffect(() => {
   const id = setInterval(() => {
-    console.log('tick');
+    console.log("tick");
   }, 1000);
 
   onCleanup(() => clearInterval(id));
@@ -225,7 +225,7 @@ console.log(total()); // 200
 Custom equality check:
 
 ```js
-const userName = createMemo(() => user().name.trim(), '', {
+const userName = createMemo(() => user().name.trim(), "", {
   equals: (a, b) => a.toLowerCase() === b.toLowerCase(),
 });
 ```
@@ -250,14 +250,14 @@ createWatch(source, callback, options?)
 Listens for changes in one or more sources, suitable for executing "actions after change".
 
 ```js
-const [keyword, setKeyword] = createSignal('');
+const [keyword, setKeyword] = createSignal("");
 
 createWatch(
   keyword,
   (next, prev) => {
-    console.log('keyword changed:', prev, '=>', next);
+    console.log("keyword changed:", prev, "=>", next);
   },
-  { defer: true }
+  { defer: true },
 );
 ```
 
@@ -269,7 +269,7 @@ createWatch(
   ([nextPage, nextSize], previous) => {
     loadList(nextPage, nextSize);
   },
-  { defer: true }
+  { defer: true },
 );
 ```
 
@@ -287,11 +287,11 @@ const isSelected = createSelector(selectedId);
 Used for list selection state determination:
 
 ```js
-const [selectedId, setSelectedId] = createSignal('a');
+const [selectedId, setSelectedId] = createSignal("a");
 const isSelected = createSelector(selectedId);
 
 jsx`
-  <button class=${() => (isSelected('a') ? 'active' : '')}>A</button>
+  <button class=${() => (isSelected("a") ? "active" : "")}>A</button>
 `;
 ```
 
@@ -305,7 +305,7 @@ If `value` is a function, call it; otherwise return the original value. Commonly
 
 ```js
 function toText(value) {
-  return String(access(value) ?? '');
+  return String(access(value) ?? "");
 }
 ```
 
@@ -408,8 +408,8 @@ scope.run(() => {});
 ```js
 createEffect(() => {
   const handler = () => {};
-  window.addEventListener('resize', handler);
-  onCleanup(() => window.removeEventListener('resize', handler));
+  window.addEventListener("resize", handler);
+  onCleanup(() => window.removeEventListener("resize", handler));
 });
 ```
 
@@ -420,7 +420,7 @@ createEffect(() => {
 ```js
 createRoot(() => {
   onMount(() => {
-    console.log('mounted in microtask');
+    console.log("mounted in microtask");
   });
 });
 ```
@@ -442,7 +442,7 @@ Returns the current owner. Mainly used for low-level tools and debugging; busine
 ```js
 const boundary = createErrorBoundary(() => {
   createEffect(() => {
-    if (count() > 5) throw new Error('Too large');
+    if (count() > 5) throw new Error("Too large");
   });
 });
 
@@ -470,7 +470,7 @@ Returns:
 ```js
 const result = catchError(
   () => JSON.parse(text),
-  (error) => ({ error: error.message })
+  (error) => ({ error: error.message }),
 );
 ```
 
@@ -482,15 +482,15 @@ Used for safe execution of synchronous functions.
 
 ```js
 const user = createStore({
-  name: 'Alice',
-  profile: { city: 'Beijing' },
+  name: "Alice",
+  profile: { city: "Beijing" },
 });
 
 createEffect(() => {
   console.log(user.name);
 });
 
-user.name = 'Bob';
+user.name = "Bob";
 ```
 
 `createStore` is shallow reactive:
@@ -509,7 +509,7 @@ Use cases:
 const state = createDeepStore({
   user: {
     profile: {
-      city: 'Beijing',
+      city: "Beijing",
     },
   },
 });
@@ -518,7 +518,7 @@ createEffect(() => {
   console.log(state.user.profile.city);
 });
 
-state.user.profile.city = 'Shanghai';
+state.user.profile.city = "Shanghai";
 ```
 
 `createDeepStore` recursively proxies plain objects and arrays, suitable for complex UI state.
@@ -528,8 +528,8 @@ state.user.profile.city = 'Shanghai';
 ```js
 const skuState = createDeepStore({
   rows: [
-    { id: 'black-s', color: 'Black', size: 'S', stock: 12, price: 89 },
-    { id: 'black-m', color: 'Black', size: 'M', stock: 4, price: 89 },
+    { id: "black-s", color: "Black", size: "S", stock: 12, price: 89 },
+    { id: "black-m", color: "Black", size: "M", stock: 4, price: 89 },
   ],
 });
 
@@ -542,14 +542,14 @@ const lowStockCount = createMemo(() => {
 });
 
 createEffect(() => {
-  console.log('total:', totalStock(), 'low:', lowStockCount());
+  console.log("total:", totalStock(), "low:", lowStockCount());
 });
 
 skuState.rows[1].stock = 8;
 skuState.rows.push({
-  id: 'green-l',
-  color: 'Green',
-  size: 'L',
+  id: "green-l",
+  color: "Green",
+  size: "L",
   stock: 2,
   price: 129,
 });
@@ -585,8 +585,8 @@ Use cases:
 
 ```js
 produce(state, (draft) => {
-  draft.user.name = 'Bob';
-  draft.rows.push({ id: 'new', stock: 1 });
+  draft.user.name = "Bob";
+  draft.rows.push({ id: "new", stock: 1 });
 });
 ```
 
@@ -620,13 +620,10 @@ Or:
 ```js
 const [id, setId] = createSignal(1);
 
-const [data, { state, reload, refetch, mutate }] = createResource(
-  id,
-  async (id) => {
-    const response = await fetch(`/api/item/${id}`);
-    return response.json();
-  }
-);
+const [data, { state, reload, refetch, mutate }] = createResource(id, async (id) => {
+  const response = await fetch(`/api/item/${id}`);
+  return response.json();
+});
 ```
 
 `state` fields:
@@ -661,7 +658,7 @@ Example: With loading UI
 
 ```js
 const [user, { state, reload }] = createResource(async () => {
-  const response = await fetch('/api/user');
+  const response = await fetch("/api/user");
   return response.json();
 });
 
@@ -676,13 +673,13 @@ render(
           : jsx`<div>${() => user()?.name}</div>`}
   </section>
 `,
-  app
+  app,
 );
 ```
 
 ### Advanced Query APIs
 
-`createQuery` has been removed from `vanillaSignal`. Use `createResource` for the built-in async primitive. For query-key, retry, stale data, and request cache workflows, use the standalone `vanillaSignal-query` package.
+`createQuery` has been removed from `vanilla-signal`. Use `createResource` for the built-in async primitive. For query-key, retry, stale data, and request cache workflows, use the standalone `vanilla-signal-query` package.
 
 ### createSuspense
 
@@ -701,7 +698,7 @@ const dispose = render(
   () => jsx`
   <button>${() => count()}</button>
 `,
-  document.getElementById('app')
+  document.getElementById("app"),
 );
 
 dispose();
@@ -729,8 +726,8 @@ Binds `textContent`.
 ### bindAttr
 
 ```js
-bindAttr(input, 'disabled', () => loading());
-bindAttr(link, 'href', () => state.url);
+bindAttr(input, "disabled", () => loading());
+bindAttr(link, "href", () => state.url);
 ```
 
 `null`, `undefined`, `false` will remove the attribute; `true` will set an empty attribute.
@@ -738,18 +735,18 @@ bindAttr(link, 'href', () => state.url);
 ### bindStyle
 
 ```js
-bindStyle(el, 'width', () => `${progress()}%`);
+bindStyle(el, "width", () => `${progress()}%`);
 
 bindStyle(el, () => ({
-  color: state.danger ? 'red' : 'green',
-  display: state.visible ? '' : 'none',
+  color: state.danger ? "red" : "green",
+  display: state.visible ? "" : "none",
 }));
 ```
 
 ### bindClass
 
 ```js
-bindClass(el, 'is-active', () => selected());
+bindClass(el, "is-active", () => selected());
 ```
 
 ### bindShow
@@ -763,13 +760,13 @@ Controls show/hide via `display: none`.
 ### bindIf
 
 ```js
-const anchor = document.createComment('if');
+const anchor = document.createComment("if");
 container.append(anchor);
 
 bindIf(
   anchor,
   () => state.open,
-  () => jsx`<div>Panel</div>`
+  () => jsx`<div>Panel</div>`,
 );
 ```
 
@@ -778,7 +775,7 @@ Inserts nodes returned by factory when condition is true; removes when false.
 ### bindList
 
 ```js
-const anchor = document.createComment('rows');
+const anchor = document.createComment("rows");
 tbody.append(anchor);
 
 bindList(
@@ -793,7 +790,7 @@ bindList(
   {
     key: (row) => row.id,
     fallback: jsx`<tr><td>No data</td></tr>`,
-  }
+  },
 );
 ```
 
@@ -815,11 +812,11 @@ Helper keys:
 
 ```js
 bindList(anchor, rows, render, {
-  key: createListKey('id'),
+  key: createListKey("id"),
 });
 
 bindList(anchor, rows, render, {
-  key: createCompositeKey('color', 'size'),
+  key: createCompositeKey("color", "size"),
 });
 ```
 
@@ -827,7 +824,7 @@ bindList(anchor, rows, render, {
 
 ### Without Build: jsx tagged template
 
-Browsers cannot directly parse `<div />` JSX syntax. Use `jsx\`...\`` in no-build scenarios:
+Browsers cannot directly parse `<div />` JSX syntax. Use ``jsx `...` `` in no-build scenarios:
 
 ```js
 const [count, setCount] = createSignal(0);
@@ -835,13 +832,13 @@ const [count, setCount] = createSignal(0);
 render(
   () => jsx`
   <button
-    class=${() => (count() > 5 ? 'is-hot' : '')}
+    class=${() => (count() > 5 ? "is-hot" : "")}
     onClick=${() => setCount((value) => value + 1)}
   >
     ${() => `count: ${count()}`}
   </button>
 `,
-  app
+  app,
 );
 ```
 
@@ -864,42 +861,34 @@ jsx`
 `;
 ```
 
-### With Build: JSX runtime
-
-If your project integrates Babel/Vite JSX transformation, you can configure to use this runtime:
+### Without Build: JSX function
 
 ```js
-// automatic runtime requires build tools to transform JSX into jsx/jsxs calls
-// importSource points to index.js export location, configure according to actual project path
+const button = jsx("button", {
+  className: "btn",
+  disabled: () => state.loading,
+  style: {
+    color: state.danger ? "red" : "green",
+  },
+  onClick: () => setCount(count() + 1),
+  children: "test",
+});
 ```
 
-After compilation, equivalent to:
-
-```js
-jsx('div', { children: 'test' });
-```
-
-Notes:
-
-- `jsx(<div>test</div>)` is not valid browser JavaScript; must be transformed by JSX compiler before running.
-- JUI's no-build syntax is `jsx\`<div>test</div>\``.
-
-### h / createElement
+### h
 
 `h` is a factory function for manual writing or after JSX compilation:
 
 ```js
 const node = h(
-  'button',
+  "button",
   {
     onClick: () => setCount(count() + 1),
-    class: () => (count() > 0 ? 'active' : ''),
+    class: () => (count() > 0 ? "active" : ""),
   },
-  () => count()
+  () => count(),
 );
 ```
-
-`createElement` is an alias for `h`.
 
 ### Fragment
 
@@ -920,7 +909,7 @@ insert(
     when: () => state.visible,
     fallback: jsx`<span>Hidden</span>`,
     children: jsx`<strong>Visible</strong>`,
-  })
+  }),
 );
 ```
 
@@ -948,7 +937,7 @@ insert(
       ${() => item().name}
     </div>
   `,
-  })
+  }),
 );
 ```
 
@@ -965,17 +954,17 @@ Why item is an accessor:
 Simple string arrays:
 
 ```js
-const [items, setItems] = createSignal(['one', 'two']);
+const [items, setItems] = createSignal(["one", "two"]);
 
 insert(
   container,
   For({
     each: items,
     children: (item) => jsx`<span>${item}</span>`,
-  })
+  }),
 );
 
-setItems(['two', 'three']);
+setItems(["two", "three"]);
 ```
 
 In the example above, `${item}` is treated as an accessor by `jsx`.
@@ -1000,7 +989,7 @@ For({
 function mountModalContent(container) {
   return render(() => {
     const form = createDeepStore({
-      name: '',
+      name: "",
       count: 1,
     });
 
@@ -1042,12 +1031,11 @@ render(
     ${For({
       each: () => toasts,
       key: (toast) => toast.id,
-      children: (toast) =>
-        jsx`<div class="toast">${() => toast().message}</div>`,
+      children: (toast) => jsx`<div class="toast">${() => toast().message}</div>`,
     })}
   </div>
 `,
-  app
+  app,
 );
 ```
 
@@ -1056,8 +1044,8 @@ render(
 ```js
 const state = createDeepStore({
   rows: [
-    { id: 'black-s', name: 'Tee', size: 'S', stock: 12, price: 89 },
-    { id: 'black-m', name: 'Tee', size: 'M', stock: 4, price: 89 },
+    { id: "black-s", name: "Tee", size: "S", stock: 12, price: 89 },
+    { id: "black-m", name: "Tee", size: "M", stock: 4, price: 89 },
   ],
 });
 
@@ -1079,13 +1067,11 @@ render(
               <td>${() => row().name}</td>
               <td>${() => row().size}</td>
               <td>
-                <input type="number" value=${() => row().stock} onInput=${(
-                  e
-                ) => {
+                <input type="number" value=${() => row().stock} onInput=${(e) => {
                   row().stock = Number(e.currentTarget.value);
                 }}>
               </td>
-              <td>${() => (row().stock < 5 ? 'Low Stock' : 'Normal')}</td>
+              <td>${() => (row().stock < 5 ? "Low Stock" : "Normal")}</td>
             </tr>
           `,
         })}
@@ -1093,7 +1079,7 @@ render(
     </table>
   </section>
 `,
-  app
+  app,
 );
 ```
 
@@ -1101,19 +1087,17 @@ render(
 
 ```js
 const state = createDeepStore({
-  keyword: '',
+  keyword: "",
 });
 
 const [result, { state: resultState, reload }] = createResource(
   () => state.keyword.trim(),
   async (queryKey) => {
     if (!queryKey) return [];
-    const response = await fetch(
-      `/api/search?q=${encodeURIComponent(queryKey)}`
-    );
+    const response = await fetch(`/api/search?q=${encodeURIComponent(queryKey)}`);
     return response.json();
   },
-  { initialValue: [] }
+  { initialValue: [] },
 );
 
 render(
@@ -1135,7 +1119,7 @@ render(
             })}
   </section>
 `,
-  app
+  app,
 );
 ```
 
@@ -1162,7 +1146,7 @@ render(
 - Deep store only recursively proxies plain objects and arrays; `Map`, `Set`, `Date`, class instances are treated as plain values.
 - `bindList`'s anchor must already be in DOM.
 - Async request APIs handle "latest request priority"; expired requests won't override new data.
-- Query-specific workflows such as query keys, retries, stale data and cache policies live in the standalone `vanillaSignal-query` package.
+- Query-specific workflows such as query keys, retries, stale data and cache policies live in the standalone `vanilla-signal-query` package.
 
 ## API Quick Reference
 
