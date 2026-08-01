@@ -156,7 +156,6 @@ function queueTask(fn: () => void): void {
     queueMicrotask(fn);
   } else {
     // 回退方案：利用已解析 Promise 的 then 回调将任务推入微任务队列
-    // eslint-disable-next-line no-floating-promises
     resolvedPromise.then(fn);
     // resolvedPromise.then(fn).catch((err) => {
     //   console.error(err);
@@ -232,7 +231,7 @@ export function getOwner(): OwnerNode | null {
  * @param {string} [type='owner'] - 所有者的类型标识，默认为 'owner'。
  * @returns {Object} 新创建的所有者对象，包含类型、父引用、子所有者列表、清理函数列表、处置状态和错误处理器。
  */
-function createOwner(parent: OwnerNode | null, type = "owner"): OwnerNode {
+function createOwner(parent: OwnerNode | null, type: string = "owner"): OwnerNode {
   // 初始化所有者对象，包含基本属性和状态
   const owner = {
     type,
