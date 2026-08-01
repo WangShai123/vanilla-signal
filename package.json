@@ -26,7 +26,7 @@
   },
   "files": [
     "dist",
-    "src/index.ts"
+    "src"
   ],
   "type": "module",
   "main": "./dist/index.js",
@@ -49,10 +49,10 @@
     "prepublishOnly": "vp run build"
   },
   "devDependencies": {
-    "@types/node": "^25.6.2",
+    "@types/node": "^26.1.2",
     "@typescript/native-preview": "7.0.0-dev.20260509.2",
     "bumpp": "^11.1.0",
-    "typescript": "^6.0.3",
-    "vite-plus": "^0.1.20"
+    "typescript": "^7.0.2",
+    "vite-plus": "^0.2.7"
   }
 }
