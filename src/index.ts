@@ -2150,6 +2150,7 @@ function defaultListKey(item: any, index: number): any {
 
 interface ListRecord {
   key: any;
+  item: any;
   nodes: Node[];
   dispose: () => void;
   setIndex: Setter<number>;
@@ -2244,10 +2245,13 @@ export function bindList(
       let record = old.get(key);
       if (record) {
         record.setIndex(index);
-        record.setItem(item);
+        if (!Object.is(record.item, item)) {
+          record.item = item;
+          record.setItem(item);
+        }
         old.delete(key);
       } else {
-        const [itemAccessor, setItem] = createSignal(item, { equals: false });
+        const [itemAccessor, setItem] = createSignal(item);
         const [indexAccessor, setIndex] = createSignal(index);
         let nodes: Node[] = [];
         const dispose = runWithOwner(listOwner, () =>
@@ -2262,6 +2266,7 @@ export function bindList(
 
         record = {
           key,
+          item,
           nodes,
           dispose,
           setIndex,

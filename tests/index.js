@@ -580,6 +580,52 @@ runner.add(
 );
 
 runner.add(
+  'bindList keyed insert skips unchanged item notifications',
+  'keyed list 插入新项时，不通知同引用的已有 itemAccessor。',
+  async () => {
+    const state = createDeepStore({
+      items: [
+        { id: 'a', label: 'A' },
+        { id: 'b', label: 'B' },
+        { id: 'c', label: 'C' },
+      ],
+    });
+    const renderableItems = createMemo(() => state.items);
+    const container = document.createElement('div');
+    const anchor = document.createComment('list');
+    const textRuns = new Map();
+    container.append(anchor);
+
+    bindList(
+      anchor,
+      renderableItems,
+      (item, _index, itemAccessor) => {
+        const el = document.createElement('span');
+        el.dataset.id = item.id;
+        bindText(el, () => {
+          const current = itemAccessor();
+          textRuns.set(current.id, (textRuns.get(current.id) || 0) + 1);
+          return current.label;
+        });
+        return el;
+      },
+      { key: (item) => item.id }
+    );
+
+    equal(textOf(container), 'ABC', 'initial labels should render');
+    textRuns.clear();
+    state.items.splice(1, 0, { id: 'x', label: 'X' });
+    await tick();
+
+    equal(textOf(container), 'AXBC', 'inserted label should render');
+    equal(textRuns.get('x'), 1, 'new item should render once');
+    equal(textRuns.get('a'), undefined, 'unchanged a should not rerender');
+    equal(textRuns.get('b'), undefined, 'unchanged b should not rerender');
+    equal(textRuns.get('c'), undefined, 'unchanged c should not rerender');
+  }
+);
+
+runner.add(
   'JSX runtime factory',
   'h/jsx 运行时支持动态 props、children 和事件。',
   async () => {
