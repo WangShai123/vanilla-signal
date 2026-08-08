@@ -12,6 +12,7 @@ import {
   createSignal,
   createStore,
   createWatch,
+  flushSync,
   insert,
   jsx,
   render,
@@ -34,6 +35,34 @@ function equal(actual, expected, message) {
 
 function textOf(el) {
   return el.textContent.replace(/\s+/g, ' ').trim();
+}
+
+function observeChildList(target) {
+  const records = [];
+  const observer = new MutationObserver((entries) => records.push(...entries));
+  observer.observe(target, { childList: true });
+
+  return {
+    records,
+    stop() {
+      observer.disconnect();
+      return records;
+    },
+  };
+}
+
+function idsFromMutations(records, property) {
+  return records.flatMap((record) =>
+    Array.from(record[property])
+      .filter((node) => node.nodeType === Node.ELEMENT_NODE && node.dataset.id)
+      .map((node) => node.dataset.id)
+  );
+}
+
+function listIds(container) {
+  return Array.from(container.querySelectorAll('[data-id]'))
+    .map((node) => node.dataset.id)
+    .join('');
 }
 
 class TestRunner {
@@ -446,6 +475,107 @@ runner.add(
       'DOM order should follow keyed array order'
     );
     assert(nodes.get('b') === bNode, 'existing keyed node should be reused');
+  }
+);
+
+runner.add(
+  'bindList keyed insert precision',
+  'keyed list 中间插入只新增目标节点，不重插已有节点。',
+  async () => {
+    const [items, setItems] = createSignal([
+      { id: 'a', label: 'A' },
+      { id: 'b', label: 'B' },
+      { id: 'c', label: 'C' },
+    ]);
+    const container = document.createElement('div');
+    const anchor = document.createComment('list');
+    container.append(anchor);
+
+    bindList(
+      anchor,
+      items,
+      (item) => {
+        const el = document.createElement('span');
+        el.dataset.id = item.id;
+        el.textContent = item.label;
+        return el;
+      },
+      { key: (item) => item.id }
+    );
+
+    equal(listIds(container), 'abc', 'initial ids should render');
+    const observer = observeChildList(container);
+    flushSync(() =>
+      setItems([
+        { id: 'a', label: 'A' },
+        { id: 'x', label: 'X' },
+        { id: 'b', label: 'B' },
+        { id: 'c', label: 'C' },
+      ])
+    );
+    await tick();
+    const mutations = observer.stop();
+
+    equal(listIds(container), 'axbc', 'inserted id should be in target order');
+    equal(
+      idsFromMutations(mutations, 'addedNodes').join(','),
+      'x',
+      'only inserted id should be added'
+    );
+    equal(
+      idsFromMutations(mutations, 'removedNodes').join(','),
+      '',
+      'existing ids should not be removed'
+    );
+  }
+);
+
+runner.add(
+  'bindList keyed data update precision',
+  'keyed list 同 key 数据更新不触发 childList 变更。',
+  async () => {
+    const [items, setItems] = createSignal([
+      { id: 'a', label: 'A' },
+      { id: 'b', label: 'B' },
+    ]);
+    const container = document.createElement('div');
+    const anchor = document.createComment('list');
+    container.append(anchor);
+
+    bindList(
+      anchor,
+      items,
+      (item, _index, itemAccessor) => {
+        const el = document.createElement('span');
+        el.dataset.id = item.id;
+        bindText(el, () => itemAccessor().label);
+        return el;
+      },
+      { key: (item) => item.id }
+    );
+
+    equal(textOf(container), 'AB', 'initial labels should render');
+    const observer = observeChildList(container);
+    flushSync(() =>
+      setItems([
+        { id: 'a', label: 'A1' },
+        { id: 'b', label: 'B1' },
+      ])
+    );
+    await tick();
+    const mutations = observer.stop();
+
+    equal(textOf(container), 'A1B1', 'same keyed records should update text');
+    equal(
+      idsFromMutations(mutations, 'addedNodes').join(','),
+      '',
+      'same keyed update should not add nodes'
+    );
+    equal(
+      idsFromMutations(mutations, 'removedNodes').join(','),
+      '',
+      'same keyed update should not remove nodes'
+    );
   }
 );
 

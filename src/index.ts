@@ -92,7 +92,7 @@ declare global {
 
 // 开发工具钩子：如果在全局 window 对象上存在 __SIGNAL_DEVTOOLS__，则引用它，否则为 null
 const DEVTOOLS: DevtoolsHook | null =
-  typeof window !== "undefined" ? window.__SIGNAL_DEVTOOLS__ || null : null;
+  typeof window !== 'undefined' ? window.__SIGNAL_DEVTOOLS__ || null : null;
 
 // 计算节点的状态常量：0 表示清洁（无待处理更新）
 const CLEAN = 0;
@@ -100,13 +100,13 @@ const CLEAN = 0;
 const STALE = 1;
 
 // 用于追踪 Store 迭代操作（如 for...of, Object.keys）的专用 Symbol key
-const ITERATE_KEY = Symbol("iterate");
+const ITERATE_KEY = Symbol('iterate');
 // 用于追踪 Store 整体版本变化的专用 Symbol key，任何属性变动都会触发此 key 的更新
-const STORE_VERSION = Symbol("store-version");
+const STORE_VERSION = Symbol('store-version');
 // 用于从 Proxy 代理对象中获取原始数据对象的专用 Symbol key
-const RAW = Symbol("signal.raw");
+const RAW = Symbol('signal.raw');
 // 用于标识一个对象是否为 Signal Store 的专用 Symbol key
-const IS_STORE = Symbol("signal.store");
+const IS_STORE = Symbol('signal.store');
 
 // 当前正在执行的监听者（Listener），用于在读取信号时建立依赖关系
 let Listener: Computation | null = null;
@@ -152,11 +152,11 @@ function emit(type: string, payload: any): void {
  */
 function queueTask(fn: () => void): void {
   // 检查浏览器是否支持原生的 queueMicrotask API
-  if (typeof queueMicrotask === "function") {
+  if (typeof queueMicrotask === 'function') {
     queueMicrotask(fn);
   } else {
     // 回退方案：利用已解析 Promise 的 then 回调将任务推入微任务队列
-    resolvedPromise.then(fn);
+    void resolvedPromise.then(fn);
     // resolvedPromise.then(fn).catch((err) => {
     //   console.error(err);
     // });
@@ -170,7 +170,7 @@ function queueTask(fn: () => void): void {
  * @returns {boolean} 如果值是对象且不为 null，则返回 true；否则返回 false。
  */
 function isObject(value: unknown): value is object {
-  return value !== null && typeof value === "object";
+  return value !== null && typeof value === 'object';
 }
 
 /**
@@ -183,7 +183,9 @@ function isObject(value: unknown): value is object {
  * @param {*} value - 需要检查的值
  * @returns {boolean} 如果值是可包装的则返回 true，否则返回 false
  */
-function isWrappable(value: unknown): value is Record<PropertyKey, any> | any[] {
+function isWrappable(
+  value: unknown
+): value is Record<PropertyKey, any> | any[] {
   // 非对象类型直接返回 false
   if (!isObject(value)) return false;
 
@@ -202,7 +204,7 @@ function isWrappable(value: unknown): value is Record<PropertyKey, any> | any[] 
  * @returns {boolean} 如果值是函数类型则返回 true，否则返回 false。
  */
 function isAccessor<T = any>(value: unknown): value is () => T {
-  return typeof value === "function";
+  return typeof value === 'function';
 }
 
 /**
@@ -231,7 +233,10 @@ export function getOwner(): OwnerNode | null {
  * @param {string} [type='owner'] - 所有者的类型标识，默认为 'owner'。
  * @returns {Object} 新创建的所有者对象，包含类型、父引用、子所有者列表、清理函数列表、处置状态和错误处理器。
  */
-function createOwner(parent: OwnerNode | null, type: string = "owner"): OwnerNode {
+function createOwner(
+  parent: OwnerNode | null,
+  type: string = 'owner'
+): OwnerNode {
   // 初始化所有者对象，包含基本属性和状态
   const owner = {
     type,
@@ -263,7 +268,10 @@ function createOwner(parent: OwnerNode | null, type: string = "owner"): OwnerNod
  * @param {Function} fn - 要在 owner 上下文中执行的无参函数。
  * @returns {*} 返回 fn 的执行结果；若 owner 已处置或错误被 handleError 吞没，则返回 undefined。
  */
-function runWithOwner<T = any>(owner: OwnerNode | null | undefined, fn: () => T): T | undefined {
+function runWithOwner<T = any>(
+  owner: OwnerNode | null | undefined,
+  fn: () => T
+): T | undefined {
   // 如果所有者已被处置，则直接返回 undefined，避免在无效上下文中执行
   if (owner?.disposed) return undefined;
 
@@ -304,8 +312,8 @@ function runCleanups(owner: OwnerNode): void {
       cleanups[i]();
     } catch (error) {
       // 捕获单个清理函数的异常，发出错误事件并记录日志，避免中断其余清理流程
-      emit("cleanup:error", { owner, error });
-      console.error("signal cleanup error:", error);
+      emit('cleanup:error', { owner, error });
+      console.error('signal cleanup error:', error);
     }
   }
 }
@@ -334,7 +342,7 @@ function disposeOwner(owner: OwnerNode | null | undefined): void {
   detachFromParent(owner);
 
   // 发出所有者已处置的事件通知
-  emit("owner:dispose", { owner });
+  emit('owner:dispose', { owner });
 }
 
 /**
@@ -367,7 +375,7 @@ function handleError(error: any, owner: OwnerNode | null = Owner): boolean {
 
   // 沿父级层级链向上遍历，寻找第一个定义了 errorHandler 函数的对象
   while (cursor) {
-    if (typeof cursor.errorHandler === "function") {
+    if (typeof cursor.errorHandler === 'function') {
       cursor.errorHandler(error);
       return true;
     }
@@ -375,7 +383,7 @@ function handleError(error: any, owner: OwnerNode | null = Owner): boolean {
   }
 
   // 若未找到任何错误处理函数，则发出未处理错误事件
-  emit("error:unhandled", { error });
+  emit('error:unhandled', { error });
   return false;
 }
 
@@ -451,7 +459,7 @@ function markStale(node: Computation | null | undefined): void {
   if (!node || node.disposed) return;
 
   // 处理 memo 类型节点：标记为过时状态，并在存在观察者时立即执行
-  if (node.type === "memo") {
+  if (node.type === 'memo') {
     // 如果已经是过时状态，则无需重复处理
     if (node.state === STALE) return;
     node.state = STALE;
@@ -514,7 +522,7 @@ function scheduleTransitionFlush(): void {
    * @type {(callback: () => void) => void}
    */
   const schedule: (callback: () => void) => void =
-    typeof requestIdleCallback === "function"
+    typeof requestIdleCallback === 'function'
       ? (callback) => {
           requestIdleCallback(callback);
         }
@@ -558,7 +566,7 @@ function flushEffects(): void {
     let guard = 0;
     while (EFFECT_QUEUE.size > 0) {
       if (++guard > 100000) {
-        throw new Error("Possible infinite reactive update loop");
+        throw new Error('Possible infinite reactive update loop');
       }
 
       const computations = drainQueue(EFFECT_QUEUE);
@@ -623,17 +631,20 @@ function cleanupSources(computation: Computation): void {
  * @param {Function} [options.equals=Object.is] - memo 值比较函数。
  * @returns {Object} 新创建的计算节点。
  */
-function createComputation(fn: (value: any) => any, options: ComputationOptions = {}): Computation {
+function createComputation(
+  fn: (value: any) => any,
+  options: ComputationOptions = {}
+): Computation {
   const owner = Owner;
   const computation: Computation = {
     id: ++computationId,
-    type: options.type || "effect",
+    type: options.type || 'effect',
     fn,
     owner,
     owned: [],
     cleanups: [],
     sources: new Set<ReactiveSource>(),
-    observers: options.type === "memo" ? new Set<Computation>() : null,
+    observers: options.type === 'memo' ? new Set<Computation>() : null,
     disposed: false,
     queued: false,
     running: false,
@@ -681,7 +692,7 @@ function disposeComputation(computation: any): void {
   runCleanups(computation);
   computation.observers?.clear();
   detachFromParent(computation);
-  emit("computation:dispose", { computation });
+  emit('computation:dispose', { computation });
 }
 
 /**
@@ -696,7 +707,7 @@ function disposeComputation(computation: any): void {
 function runComputation(computation: Computation): any {
   if (computation.disposed) return computation.value;
   if (computation.running) {
-    throw new Error("Circular dependency detected in reactive computation");
+    throw new Error('Circular dependency detected in reactive computation');
   }
 
   cleanupSources(computation);
@@ -781,7 +792,10 @@ function runMemo(computation: Computation): any {
  * Core APIs
  * ====================== */
 
-export function createSignal<T = any>(initial: T, options: SignalOptions<T> = {}): SignalTuple<T> {
+export function createSignal<T = any>(
+  initial: T,
+  options: SignalOptions<T> = {}
+): SignalTuple<T> {
   let value = initial;
   const signal: ReactiveSource = {
     observers: new Set<Computation>(),
@@ -794,12 +808,13 @@ export function createSignal<T = any>(initial: T, options: SignalOptions<T> = {}
   }
 
   function write(next: T | ((previous: T) => T)): T {
-    const nextValue = typeof next === "function" ? (next as (previous: T) => T)(value) : next;
+    const nextValue =
+      typeof next === 'function' ? (next as (previous: T) => T)(value) : next;
     if (signal.equals?.(value, nextValue)) return value;
 
     const previous = value;
     value = nextValue;
-    emit("signal:update", { previous, next: nextValue });
+    emit('signal:update', { previous, next: nextValue });
     notifySource(signal);
     return value;
   }
@@ -821,9 +836,12 @@ export function createSignal<T = any>(initial: T, options: SignalOptions<T> = {}
  * @param {number} [options.priority=0] - 调度优先级。
  * @returns {Object} 可 dispose 的计算节点。
  */
-export function createEffect(fn: (value?: any) => any, options: EffectOptions = {}): Computation {
+export function createEffect(
+  fn: (value?: any) => any,
+  options: EffectOptions = {}
+): Computation {
   const computation = createComputation(fn, {
-    type: "effect",
+    type: 'effect',
     priority: options.priority || 0,
   });
 
@@ -845,7 +863,10 @@ export function createEffect(fn: (value?: any) => any, options: EffectOptions = 
  * @param {Object} [options={}] - 计算配置。
  * @returns {Object} 可 dispose 的计算节点。
  */
-export function createComputed(fn: (value?: any) => any, options: EffectOptions = {}): Computation {
+export function createComputed(
+  fn: (value?: any) => any,
+  options: EffectOptions = {}
+): Computation {
   return createEffect(fn, options);
 }
 
@@ -862,21 +883,21 @@ export function createComputed(fn: (value?: any) => any, options: EffectOptions 
 export function createMemo<T = any>(
   fn: (previous?: T) => T,
   initial?: any,
-  options: any = {},
+  options: any = {}
 ): Accessor<T> {
   if (
     initial &&
-    typeof initial === "object" &&
+    typeof initial === 'object' &&
     !Array.isArray(initial) &&
-    (Object.prototype.hasOwnProperty.call(initial, "equals") ||
-      Object.prototype.hasOwnProperty.call(initial, "defer"))
+    (Object.prototype.hasOwnProperty.call(initial, 'equals') ||
+      Object.prototype.hasOwnProperty.call(initial, 'defer'))
   ) {
     options = initial;
     initial = undefined;
   }
 
   const computation = createComputation(fn, {
-    type: "memo",
+    type: 'memo',
     value: initial,
     equals: equalsFromOptions(options),
   });
@@ -909,9 +930,11 @@ export function createMemo<T = any>(
 export function createWatch<T>(
   source: MaybeAccessor<T> | Array<MaybeAccessor<T>>,
   fn: (next: T | T[], previous: T | T[] | undefined) => void,
-  options: EffectOptions = {},
+  options: EffectOptions = {}
 ): Computation {
-  const sources: Array<MaybeAccessor<T>> = Array.isArray(source) ? source : [source];
+  const sources: Array<MaybeAccessor<T>> = Array.isArray(source)
+    ? source
+    : [source];
   let previous: T | T[] | undefined;
   let initialized: boolean = false;
 
@@ -947,7 +970,7 @@ export function createWatch<T>(
  */
 export function createSelector<T = any>(
   source: MaybeAccessor<T>,
-  equals: (a: any, b: any) => boolean = Object.is,
+  equals: (a: any, b: any) => boolean = Object.is
 ): (key: T) => boolean {
   const selected = createMemo(() => access(source));
   return (key) => equals(selected(), key);
@@ -1072,13 +1095,13 @@ export function onMount(fn: () => void): void {
  * @returns {Object} 包含 result、dispose 和 run 的作用域对象。
  */
 export function createScope<T = any>(
-  fn?: () => T,
+  fn?: () => T
 ): {
   result: T | undefined;
   dispose: () => void;
   run: <R = any>(fn: () => R) => R | undefined;
 } {
-  const scope = createOwner(Owner, "scope");
+  const scope = createOwner(Owner, 'scope');
   const result = runWithOwner(scope, () => fn?.());
 
   return {
@@ -1101,7 +1124,7 @@ export function createScope<T = any>(
  * @returns {*} fn 的返回值；如果返回 undefined，则返回默认作用域控制对象。
  */
 export function createRoot<T = any>(fn: (dispose: () => void) => T): any {
-  const root = createOwner(Owner, "root");
+  const root = createOwner(Owner, 'root');
   const dispose = () => disposeOwner(root);
   const result = runWithOwner(root, () => fn?.(dispose));
   return result === undefined
@@ -1115,7 +1138,7 @@ export function createRoot<T = any>(fn: (dispose: () => void) => T): any {
 
 export function createErrorBoundary(
   fn: () => void,
-  fallback?: any,
+  fallback?: any
 ): {
   error: Accessor<any>;
   fallback: any;
@@ -1128,10 +1151,10 @@ export function createErrorBoundary(
 
   const setup = () => {
     const parent = Owner;
-    const boundary = createOwner(parent, "error-boundary");
+    const boundary = createOwner(parent, 'error-boundary');
     boundary.errorHandler = (caught) => {
       setError(caught);
-      emit("error-boundary:catch", { error: caught });
+      emit('error-boundary:catch', { error: caught });
     };
 
     scope = {
@@ -1170,12 +1193,17 @@ export function createErrorBoundary(
  * @param {*|Function} fallback - 错误发生时返回的值或错误映射函数。
  * @returns {*} fn 的结果或 fallback 结果。
  */
-export function catchError<T = any>(fn: () => T, fallback: T | ((error: any) => T)): T {
+export function catchError<T = any>(
+  fn: () => T,
+  fallback: T | ((error: any) => T)
+): T {
   try {
     return fn();
   } catch (error) {
-    emit("catch-error", { error });
-    return typeof fallback === "function" ? (fallback as (error: any) => T)(error) : fallback;
+    emit('catch-error', { error });
+    return typeof fallback === 'function'
+      ? (fallback as (error: any) => T)(error)
+      : fallback;
   }
 }
 
@@ -1274,7 +1302,10 @@ function unwrapShallow<T = any>(value: T): any {
  * @param {WeakMap} [seen=new WeakMap()] - 循环引用缓存。
  * @returns {*} 解包后的普通值。
  */
-export function unwrap<T = any>(value: T, seen: WeakMap<object, any> = new WeakMap()): any {
+export function unwrap<T = any>(
+  value: T,
+  seen: WeakMap<object, any> = new WeakMap()
+): any {
   const raw = unwrapShallow(value);
   if (!isObject(raw)) return raw;
   if (seen.has(raw)) return seen.get(raw);
@@ -1311,24 +1342,29 @@ export function snapshot<T = any>(value: T): any {
  * @returns {boolean} 如果 key 表示合法数组索引则返回 true。
  */
 function isArrayIndex(key: PropertyKey): boolean {
-  if (typeof key === "symbol") return false;
+  if (typeof key === 'symbol') return false;
   const value = String(key);
-  if (value === "") return false;
+  if (value === '') return false;
   const number = Number(value);
-  return Number.isInteger(number) && number >= 0 && number < 4294967295 && String(number) === value;
+  return (
+    Number.isInteger(number) &&
+    number >= 0 &&
+    number < 4294967295 &&
+    String(number) === value
+  );
 }
 
 // 会改变数组自身结构或内容的方法，需要手动触发数组相关依赖。
 const ARRAY_MUTATORS = new Set<string>([
-  "copyWithin",
-  "fill",
-  "pop",
-  "push",
-  "reverse",
-  "shift",
-  "sort",
-  "splice",
-  "unshift",
+  'copyWithin',
+  'fill',
+  'pop',
+  'push',
+  'reverse',
+  'shift',
+  'sort',
+  'splice',
+  'unshift',
 ]);
 
 /**
@@ -1358,22 +1394,22 @@ function triggerArrayMutation(
   method: string,
   args: any[],
   oldLength: number,
-  newLength: number,
+  newLength: number
 ): void {
   const maxLength = Math.max(oldLength, newLength);
 
-  if (method === "push") {
+  if (method === 'push') {
     triggerArrayRange(target, oldLength, newLength);
-  } else if (method === "pop") {
+  } else if (method === 'pop') {
     triggerKey(target, String(newLength));
-  } else if (method === "splice") {
+  } else if (method === 'splice') {
     const start = Math.max(0, Number(args[0]) || 0);
     triggerArrayRange(target, start, maxLength);
   } else {
     triggerArrayRange(target, 0, maxLength);
   }
 
-  if (oldLength !== newLength) triggerKey(target, "length");
+  if (oldLength !== newLength) triggerKey(target, 'length');
   triggerKey(target, ITERATE_KEY);
   triggerKey(target, STORE_VERSION);
 }
@@ -1389,14 +1425,21 @@ function triggerArrayMutation(
  * @param {boolean} readonly - 是否为只读 store。
  * @returns {Function} 包装后的数组方法。
  */
-function createArrayMethod(target: any[], receiver: any[], key: string, readonly: boolean): AnyFn {
+function createArrayMethod(
+  target: any[],
+  receiver: any[],
+  key: string,
+  readonly: boolean
+): AnyFn {
   const method = (Array.prototype as any)[key] as AnyFn;
 
   if (ARRAY_MUTATORS.has(key)) {
     return (...args) => {
       if (readonly) {
-        console.warn(`[signal] Cannot call mutating array method "${key}" on readonly store`);
-        return key === "sort" || key === "reverse" ? receiver : undefined;
+        console.warn(
+          `[signal] Cannot call mutating array method "${key}" on readonly store`
+        );
+        return key === 'sort' || key === 'reverse' ? receiver : undefined;
       }
 
       const oldLength = target.length;
@@ -1439,25 +1482,31 @@ function createProxy<T = any>(target: T, deep: boolean, readonly: boolean): T {
     get(obj, key, receiver) {
       if (key === RAW) return obj;
       if (key === IS_STORE) return true;
-      if (key === "__raw") return obj;
-      if (key === "__isStore") return true;
-      if (key === "__version__") {
+      if (key === '__raw') return obj;
+      if (key === '__isStore') return true;
+      if (key === '__version__') {
         trackKey(obj, STORE_VERSION);
         return getStoreDep(obj, STORE_VERSION)[0]();
       }
 
-      if (Array.isArray(obj) && typeof key === "string" && key in Array.prototype) {
+      if (
+        Array.isArray(obj) &&
+        typeof key === 'string' &&
+        key in Array.prototype
+      ) {
         const value = Reflect.get(obj, key, receiver);
-        if (typeof value === "function") {
+        if (typeof value === 'function') {
           return createArrayMethod(obj, receiver, key, readonly);
         }
       }
 
       if (key === Symbol.iterator) trackKey(obj, ITERATE_KEY);
-      if (typeof key !== "symbol") trackKey(obj, key);
+      if (typeof key !== 'symbol') trackKey(obj, key);
 
       const value = Reflect.get(obj, key, receiver);
-      return deep && isWrappable(value) ? createProxy(value, true, readonly) : value;
+      return deep && isWrappable(value)
+        ? createProxy(value, true, readonly)
+        : value;
     },
 
     set(obj, key, value, receiver) {
@@ -1481,13 +1530,13 @@ function createProxy<T = any>(target: T, deep: boolean, readonly: boolean): T {
         if (!hadKey) triggerKey(obj, ITERATE_KEY);
 
         if (Array.isArray(obj)) {
-          if (key === "length") {
+          if (key === 'length') {
             const newLength = obj.length;
             triggerArrayRange(obj, newLength, oldLength);
-            triggerKey(obj, "length");
+            triggerKey(obj, 'length');
             triggerKey(obj, ITERATE_KEY);
           } else if (isArrayIndex(key) && obj.length !== oldLength) {
-            triggerKey(obj, "length");
+            triggerKey(obj, 'length');
             triggerKey(obj, ITERATE_KEY);
           }
         }
@@ -1498,7 +1547,9 @@ function createProxy<T = any>(target: T, deep: boolean, readonly: boolean): T {
 
     deleteProperty(obj, key) {
       if (readonly) {
-        console.warn(`[signal] Cannot delete "${String(key)}" on readonly store`);
+        console.warn(
+          `[signal] Cannot delete "${String(key)}" on readonly store`
+        );
         return true;
       }
 
@@ -1512,7 +1563,7 @@ function createProxy<T = any>(target: T, deep: boolean, readonly: boolean): T {
           triggerKey(obj, ITERATE_KEY);
           triggerKey(obj, STORE_VERSION);
           if (Array.isArray(obj) && obj.length !== oldLength) {
-            triggerKey(obj, "length");
+            triggerKey(obj, 'length');
           }
         });
       }
@@ -1544,7 +1595,9 @@ function createProxy<T = any>(target: T, deep: boolean, readonly: boolean): T {
  * @param {Object|Array} [target={}] - 初始对象或数组。
  * @returns {*} 响应式 store proxy。
  */
-export function createStore<T extends object = Record<string, any>>(target: T = {} as T): T {
+export function createStore<T extends object = Record<string, any>>(
+  target: T = {} as T
+): T {
   return createProxy(target, false, false);
 }
 
@@ -1556,7 +1609,9 @@ export function createStore<T extends object = Record<string, any>>(target: T = 
  * @param {Object|Array} [target={}] - 初始对象或数组。
  * @returns {*} 深层响应式 store proxy。
  */
-export function createDeepStore<T extends object = Record<string, any>>(target: T = {} as T): T {
+export function createDeepStore<T extends object = Record<string, any>>(
+  target: T = {} as T
+): T {
   return createProxy(target, true, false);
 }
 
@@ -1569,7 +1624,7 @@ export function createDeepStore<T extends object = Record<string, any>>(target: 
  * @returns {*} 只读 store proxy。
  */
 export function createReadonly<T extends object = Record<string, any>>(
-  target: T = {} as T,
+  target: T = {} as T
 ): Readonly<T> {
   return createProxy(target, true, true) as Readonly<T>;
 }
@@ -1595,9 +1650,9 @@ export function produce<T>(store: T, recipe: (store: T) => void): T {
 export function createResource<T = any>(
   source: any,
   fetcher?: any,
-  options?: any,
+  options?: any
 ): [ResourceAccessor<T>, ResourceControls<T>] {
-  if (typeof fetcher !== "function") {
+  if (typeof fetcher !== 'function') {
     options = fetcher || {};
     fetcher = source;
     source = options.source;
@@ -1657,7 +1712,8 @@ export function createResource<T = any>(
 
     //  abort 前一个未完成的请求，并创建新的 AbortController
     if (controller) controller.abort();
-    controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+    controller =
+      typeof AbortController !== 'undefined' ? new AbortController() : null;
 
     // 重置错误状态，更新数据陈旧状态，并根据情况设置加载状态
     state.error = null;
@@ -1670,7 +1726,7 @@ export function createResource<T = any>(
         value,
         refetching,
         signal: controller?.signal,
-      }),
+      })
     )
       .then((data: T) => {
         // 忽略过时请求的响应，更新最新数据并重置加载状态
@@ -1684,7 +1740,7 @@ export function createResource<T = any>(
       })
       .catch((error: any) => {
         // 处理请求中止或失败的情况，仅对当前有效请求更新错误状态
-        if (id !== requestId && error?.name === "AbortError") return state.data;
+        if (id !== requestId && error?.name === 'AbortError') return state.data;
         if (id === requestId) {
           clearLoadingTimer();
           state.error = error;
@@ -1718,7 +1774,12 @@ export function createResource<T = any>(
    * @returns {*} 当前资源数据。
    */
   function read(): T | undefined {
-    if (options.suspense && state.loading && state.data === undefined && pending) {
+    if (
+      options.suspense &&
+      state.loading &&
+      state.data === undefined &&
+      pending
+    ) {
       throw pending;
     }
     if (options.throwErrors && state.error) throw state.error;
@@ -1735,16 +1796,22 @@ export function createResource<T = any>(
       state,
       mutate(value: T | ((previous: T | undefined) => T)) {
         state.data =
-          typeof value === "function"
+          typeof value === 'function'
             ? (value as (previous: T | undefined) => T)(state.data)
             : value;
         state.latest = state.data;
       },
       reload(value?: any) {
-        return load(value === undefined && source ? access(source) : value, true);
+        return load(
+          value === undefined && source ? access(source) : value,
+          true
+        );
       },
       refetch(value?: any) {
-        return load(value === undefined && source ? access(source) : value, false);
+        return load(
+          value === undefined && source ? access(source) : value,
+          false
+        );
       },
     },
   ];
@@ -1759,7 +1826,10 @@ export function createResource<T = any>(
  * @param {*|Function} fallback - pending 时返回的兜底值或访问器。
  * @returns {Function} memo 读取函数。
  */
-export function createSuspense<T = any>(fn: () => T, fallback: MaybeAccessor<T>): Accessor<T> {
+export function createSuspense<T = any>(
+  fn: () => T,
+  fallback: MaybeAccessor<T>
+): Accessor<T> {
   const [version, setVersion] = createSignal(0, { equals: false });
   let pending: Promise<any> | null = null;
 
@@ -1775,7 +1845,7 @@ export function createSuspense<T = any>(fn: () => T, fallback: MaybeAccessor<T>)
           pending = promise;
           promise.then(
             () => setVersion((value) => value + 1),
-            () => setVersion((value) => value + 1),
+            () => setVersion((value) => value + 1)
           );
         }
         return access(fallback);
@@ -1795,7 +1865,7 @@ export function createSuspense<T = any>(fn: () => T, fallback: MaybeAccessor<T>)
  * @returns {boolean} 如果 document 存在则返回 true。
  */
 function canUseDOM(): boolean {
-  return typeof document !== "undefined";
+  return typeof document !== 'undefined';
 }
 
 /**
@@ -1857,7 +1927,11 @@ function removeNodes(nodes: Node[]): void {
  * @param {Node|null} [marker=null] - 插入位置标记，节点会插入在该标记前。
  * @returns {Function} 清理函数。
  */
-export function insert(parent: Node, value: any, marker: Node | null = null): () => void {
+export function insert(
+  parent: Node,
+  value: any,
+  marker: Node | null = null
+): () => void {
   let current: Node[] = [];
 
   const update = (next: any) => {
@@ -1900,7 +1974,7 @@ export function insert(parent: Node, value: any, marker: Node | null = null): ()
  * @returns {Function} root dispose 函数。
  */
 export function render(value: any, container: Element): any {
-  container.textContent = "";
+  container.textContent = '';
   return createRoot((dispose) => {
     const cleanup = insert(container, value);
     onCleanup(cleanup);
@@ -1918,7 +1992,7 @@ export function render(value: any, container: Element): any {
 export function bindText(el: Element, signal: MaybeAccessor<any>): Computation {
   return createEffect(() => {
     const value = access(signal);
-    el.textContent = value == null ? "" : String(value);
+    el.textContent = value == null ? '' : String(value);
   });
 }
 
@@ -1932,13 +2006,17 @@ export function bindText(el: Element, signal: MaybeAccessor<any>): Computation {
  * @param {*|Function} signal - 属性值或访问器。
  * @returns {Object} effect 计算节点。
  */
-export function bindAttr(el: Element, name: string, signal: MaybeAccessor<any>): Computation {
+export function bindAttr(
+  el: Element,
+  name: string,
+  signal: MaybeAccessor<any>
+): Computation {
   return createEffect(() => {
     const value = access(signal);
     if (value == null || value === false) {
       el.removeAttribute(name);
     } else if (value === true) {
-      el.setAttribute(name, "");
+      el.setAttribute(name, '');
     } else {
       el.setAttribute(name, String(value));
     }
@@ -1958,15 +2036,15 @@ export function bindAttr(el: Element, name: string, signal: MaybeAccessor<any>):
 export function bindStyle(
   el: any,
   name: string | Record<string, any>,
-  signal?: MaybeAccessor<any>,
+  signal?: MaybeAccessor<any>
 ): Computation {
-  if (typeof name === "object") {
+  if (typeof name === 'object') {
     return createEffect(() => setStyle(el, access(name)));
   }
 
   return createEffect(() => {
     const value = access(signal);
-    el.style[name] = value == null ? "" : String(value);
+    el.style[name] = value == null ? '' : String(value);
   });
 }
 
@@ -1978,7 +2056,11 @@ export function bindStyle(
  * @param {*|Function} signal - 布尔值或访问器。
  * @returns {Object} effect 计算节点。
  */
-export function bindClass(el: Element, name: string, signal: MaybeAccessor<any>): Computation {
+export function bindClass(
+  el: Element,
+  name: string,
+  signal: MaybeAccessor<any>
+): Computation {
   return createEffect(() => {
     el.classList.toggle(name, !!access(signal));
   });
@@ -1997,10 +2079,10 @@ export function bindClass(el: Element, name: string, signal: MaybeAccessor<any>)
 export function bindShow(
   el: HTMLElement | SVGElement,
   signal: MaybeAccessor<any>,
-  display = "",
+  display = ''
 ): Computation {
   return createEffect(() => {
-    el.style.display = access(signal) ? display : "none";
+    el.style.display = access(signal) ? display : 'none';
   });
 }
 
@@ -2017,10 +2099,10 @@ export function bindShow(
 export function bindIf(
   anchor: Node,
   condition: MaybeAccessor<any>,
-  factory: () => any,
+  factory: () => any
 ): () => void {
   const parent = anchor.parentNode as Node;
-  const marker = document.createComment("if");
+  const marker = document.createComment('if');
   parent.insertBefore(marker, anchor.nextSibling);
 
   let cleanup: (() => void) | null = null;
@@ -2059,11 +2141,48 @@ export function bindIf(
  */
 function defaultListKey(item: any, index: number): any {
   const value = access(item);
-  if (value && typeof value === "object") {
-    if ("id" in value) return value.id;
-    if ("key" in value) return value.key;
+  if (value && typeof value === 'object') {
+    if ('id' in value) return value.id;
+    if ('key' in value) return value.key;
   }
   return index;
+}
+
+interface ListRecord {
+  key: any;
+  nodes: Node[];
+  dispose: () => void;
+  setIndex: Setter<number>;
+  setItem: Setter<any>;
+}
+
+function isPlacedBefore(nodes: readonly Node[], cursor: Node): boolean {
+  if (nodes.length === 0) return true;
+
+  for (let index = 0; index < nodes.length - 1; index += 1) {
+    if (nodes[index].nextSibling !== nodes[index + 1]) return false;
+  }
+
+  return nodes[nodes.length - 1].nextSibling === cursor;
+}
+
+function placeRecord(parent: Node, record: ListRecord, cursor: Node): void {
+  if (isPlacedBefore(record.nodes, cursor)) return;
+  record.nodes.forEach((node) => parent.insertBefore(node, cursor));
+}
+
+function placeRecords(
+  parent: Node,
+  next: readonly ListRecord[],
+  anchor: Node
+): void {
+  let cursor = anchor;
+
+  for (let index = next.length - 1; index >= 0; index -= 1) {
+    const record = next[index];
+    placeRecord(parent, record, cursor);
+    cursor = record.nodes[0] || cursor;
+  }
 }
 
 /**
@@ -2080,12 +2199,16 @@ function defaultListKey(item: any, index: number): any {
 export function bindList(
   anchor: Node,
   listSignal: MaybeAccessor<any[]>,
-  renderItem: (item: any, index: Accessor<number>, itemAccessor: Accessor<any>) => any,
-  options: any = {},
+  renderItem: (
+    item: any,
+    index: Accessor<number>,
+    itemAccessor: Accessor<any>
+  ) => any,
+  options: any = {}
 ): () => void {
   const keyFn = options.key || defaultListKey;
   const listOwner = Owner;
-  let records: any[] = [];
+  let records: ListRecord[] = [];
   let fallbackCleanup: (() => void) | null = null;
 
   function clearFallback() {
@@ -2101,8 +2224,8 @@ export function bindList(
   const effect = createEffect(() => {
     const parent = anchor.parentNode as Node;
     const list = access(listSignal) || [];
-    const old = new Map<any, any>();
-    const next: any[] = [];
+    const old = new Map<any, ListRecord>();
+    const next: ListRecord[] = [];
     const used = new Set<any>();
 
     records.forEach((record) => {
@@ -2129,11 +2252,12 @@ export function bindList(
         let nodes: Node[] = [];
         const dispose = runWithOwner(listOwner, () =>
           createRoot((rootDispose) => {
-            nodes = normalizeNodes(renderItem(item, indexAccessor, itemAccessor));
-            nodes.forEach((node) => parent.insertBefore(node, anchor));
+            nodes = normalizeNodes(
+              renderItem(item, indexAccessor, itemAccessor)
+            );
             onCleanup(() => removeNodes(nodes));
             return rootDispose;
-          }),
+          })
         );
 
         record = {
@@ -2149,10 +2273,7 @@ export function bindList(
     });
 
     old.forEach((record) => record.dispose());
-
-    next.forEach((record) => {
-      record.nodes.forEach((node: Node) => parent.insertBefore(node, anchor));
-    });
+    placeRecords(parent, next, anchor);
 
     if (next.length === 0) showFallback(parent);
     records = next;
@@ -2184,10 +2305,12 @@ export function createListKey(property: string): (item: any) => any {
  * @param {...string} properties - 参与组合的属性名。
  * @returns {Function} key 提取函数。
  */
-export function createCompositeKey(...properties: string[]): (item: any) => string {
+export function createCompositeKey(
+  ...properties: string[]
+): (item: any) => string {
   return (item) => {
     const value = access(item);
-    return properties.map((property) => value?.[property]).join("_");
+    return properties.map((property) => value?.[property]).join('_');
   };
 }
 
@@ -2197,25 +2320,25 @@ export function createCompositeKey(...properties: string[]): (item: any) => stri
 
 // 需要使用 SVG 命名空间创建的标签集合。
 const SVG_TAGS = new Set<string>([
-  "svg",
-  "g",
-  "path",
-  "circle",
-  "ellipse",
-  "line",
-  "polyline",
-  "polygon",
-  "rect",
-  "defs",
-  "clipPath",
-  "linearGradient",
-  "radialGradient",
-  "stop",
-  "text",
-  "tspan",
-  "use",
-  "symbol",
-  "view",
+  'svg',
+  'g',
+  'path',
+  'circle',
+  'ellipse',
+  'line',
+  'polyline',
+  'polygon',
+  'rect',
+  'defs',
+  'clipPath',
+  'linearGradient',
+  'radialGradient',
+  'stop',
+  'text',
+  'tspan',
+  'use',
+  'symbol',
+  'view',
 ]);
 
 /**
@@ -2240,18 +2363,18 @@ function eventName(prop: string): string | null {
  */
 function setStyle(el: any, value: any): void {
   if (value == null) {
-    el.removeAttribute("style");
+    el.removeAttribute('style');
     return;
   }
 
-  if (typeof value === "string") {
+  if (typeof value === 'string') {
     el.style.cssText = value;
     return;
   }
 
   Object.keys(value || {}).forEach((name) => {
     const styleValue = access(value[name]);
-    el.style[name] = styleValue == null ? "" : String(styleValue);
+    el.style[name] = styleValue == null ? '' : String(styleValue);
   });
 }
 
@@ -2262,7 +2385,10 @@ function setStyle(el: any, value: any): void {
  * @param {Object} value - class 到布尔值/访问器的映射。
  * @returns {void}
  */
-function setClassList(el: Element, value: Record<string, any> | null | undefined): void {
+function setClassList(
+  el: Element,
+  value: Record<string, any> | null | undefined
+): void {
   const classMap = value || {};
   Object.keys(classMap).forEach((name) => {
     el.classList.toggle(name, !!access(classMap[name]));
@@ -2280,8 +2406,8 @@ function setClassList(el: Element, value: Record<string, any> | null | undefined
  */
 function setRef(ref: any, el: Element): void {
   if (!ref) return;
-  if (typeof ref === "function") ref(el);
-  else if (typeof ref === "object") ref.current = el;
+  if (typeof ref === 'function') ref(el);
+  else if (typeof ref === 'object') ref.current = el;
 }
 
 /**
@@ -2295,40 +2421,40 @@ function setRef(ref: any, el: Element): void {
  * @returns {void}
  */
 function setProperty(el: any, name: string, value: any): void {
-  if (name === "children" || name === "key") return;
+  if (name === 'children' || name === 'key') return;
 
-  if (name === "ref") {
+  if (name === 'ref') {
     setRef(value, el);
     return;
   }
 
-  if (name === "class" || name === "className") {
-    const next = value == null ? "" : String(value);
-    if (el.namespaceURI === "http://www.w3.org/2000/svg") {
-      el.setAttribute("class", next);
+  if (name === 'class' || name === 'className') {
+    const next = value == null ? '' : String(value);
+    if (el.namespaceURI === 'http://www.w3.org/2000/svg') {
+      el.setAttribute('class', next);
     } else {
       el.className = next;
     }
     return;
   }
 
-  if (name === "classList") {
+  if (name === 'classList') {
     setClassList(el, value);
     return;
   }
 
-  if (name === "style") {
+  if (name === 'style') {
     setStyle(el, value);
     return;
   }
 
-  const attrName = name === "htmlFor" ? "for" : name;
+  const attrName = name === 'htmlFor' ? 'for' : name;
 
   if (value == null || value === false) {
     el.removeAttribute(attrName);
-    if (name in el && typeof el[name] !== "function") {
+    if (name in el && typeof el[name] !== 'function') {
       try {
-        el[name] = value == null ? "" : false;
+        el[name] = value == null ? '' : false;
       } catch {
         // Ignore readonly DOM properties.
       }
@@ -2337,7 +2463,7 @@ function setProperty(el: any, name: string, value: any): void {
   }
 
   if (value === true) {
-    el.setAttribute(attrName, "");
+    el.setAttribute(attrName, '');
     if (name in el) {
       try {
         el[name] = true;
@@ -2348,7 +2474,7 @@ function setProperty(el: any, name: string, value: any): void {
     return;
   }
 
-  if (name in el && attrName !== "list" && attrName !== "type") {
+  if (name in el && attrName !== 'list' && attrName !== 'type') {
     try {
       el[name] = value;
       return;
@@ -2372,13 +2498,18 @@ function setProperty(el: any, name: string, value: any): void {
  */
 function applyProp(el: Element, name: string, value: any): void {
   const event = eventName(name);
-  if (event && typeof value === "function") {
+  if (event && typeof value === 'function') {
     el.addEventListener(event, value);
     onCleanup(() => el.removeEventListener(event, value));
     return;
   }
 
-  if (isAccessor(value) && name !== "ref" && name !== "children" && name !== "key") {
+  if (
+    isAccessor(value) &&
+    name !== 'ref' &&
+    name !== 'children' &&
+    name !== 'key'
+  ) {
     createEffect(() => setProperty(el, name, value()));
   } else {
     setProperty(el, name, value);
@@ -2411,11 +2542,15 @@ function normalizeChildren(props: any, children: any[]): any {
  * @param {...*} children - 子节点。
  * @returns {*} 组件结果或 DOM 元素。
  */
-export function h(type: string | ((props: any) => any), props?: any, ...children: any[]): any {
+export function h(
+  type: string | ((props: any) => any),
+  props?: any,
+  ...children: any[]
+): any {
   props = props || {};
   const normalizedChildren = normalizeChildren(props, children);
 
-  if (typeof type === "function") {
+  if (typeof type === 'function') {
     return (type as (props: any) => any)({
       ...props,
       children: normalizedChildren,
@@ -2423,11 +2558,11 @@ export function h(type: string | ((props: any) => any), props?: any, ...children
   }
 
   const el = SVG_TAGS.has(type as string)
-    ? document.createElementNS("http://www.w3.org/2000/svg", type)
+    ? document.createElementNS('http://www.w3.org/2000/svg', type)
     : document.createElement(type as string);
 
   Object.keys(props).forEach((name) => {
-    if (name !== "children") applyProp(el, name, props[name]);
+    if (name !== 'children') applyProp(el, name, props[name]);
   });
 
   if (normalizedChildren !== undefined) {
@@ -2459,7 +2594,10 @@ export function Fragment(props: { children?: any } = {}): any {
  * @returns {boolean} 如果值是 TemplateStringsArray 则返回 true。
  */
 function isTemplateStrings(value: unknown): value is TemplateStringsArray {
-  return Array.isArray(value) && Array.isArray((value as Partial<TemplateStringsArray>).raw);
+  return (
+    Array.isArray(value) &&
+    Array.isArray((value as Partial<TemplateStringsArray>).raw)
+  );
 }
 
 /**
@@ -2473,7 +2611,7 @@ function isTemplateStrings(value: unknown): value is TemplateStringsArray {
 function parseTemplateValue(value: any): Node | Node[] {
   if (isAccessor(value)) {
     const fragment = document.createDocumentFragment();
-    const marker = document.createComment("jui-dynamic");
+    const marker = document.createComment('jui-dynamic');
     fragment.append(marker);
     let cleanup: (() => void) | null = null;
 
@@ -2493,7 +2631,7 @@ function parseTemplateValue(value: any): Node | Node[] {
     return fragment;
   }
 
-  return document.createTextNode(value == null ? "" : String(value));
+  return document.createTextNode(value == null ? '' : String(value));
 }
 
 /**
@@ -2503,8 +2641,8 @@ function parseTemplateValue(value: any): Node | Node[] {
  * @returns {Node|Node[]} 单个节点或节点数组。
  */
 export function html(markup: any): Node | Node[] {
-  const template = document.createElement("template");
-  template.innerHTML = String(markup || "").trim();
+  const template = document.createElement('template');
+  template.innerHTML = String(markup || '').trim();
   return template.content.childNodes.length === 1
     ? (template.content.firstChild as Node)
     : Array.from(template.content.childNodes);
@@ -2519,8 +2657,11 @@ export function html(markup: any): Node | Node[] {
  * @param {Array} values - 插值数组。
  * @returns {Node|Node[]} DOM 节点或节点数组。
  */
-function templateToNodes(strings: TemplateStringsArray | string[], values: any[]): Node | Node[] {
-  let html = "";
+function templateToNodes(
+  strings: TemplateStringsArray | string[],
+  values: any[]
+): Node | Node[] {
+  let html = '';
   const attrTokens = new Map<string, number>();
   const attrNames = new Map<number, string>();
 
@@ -2528,7 +2669,9 @@ function templateToNodes(strings: TemplateStringsArray | string[], values: any[]
     html += strings[i];
     if (i < values.length) {
       const before = strings[i];
-      const attrMatch = before.match(/([:@A-Za-z_][-:@A-Za-z0-9_.]*)\s*=\s*(['"]?)$/);
+      const attrMatch = before.match(
+        /([:@A-Za-z_][-:@A-Za-z0-9_.]*)\s*=\s*(['"]?)$/
+      );
       if (attrMatch) {
         const token = `__JUI_ATTR_${i}__`;
         attrTokens.set(token, i);
@@ -2540,17 +2683,17 @@ function templateToNodes(strings: TemplateStringsArray | string[], values: any[]
     }
   }
 
-  const template = document.createElement("template");
+  const template = document.createElement('template');
   template.innerHTML = html.trim();
   const content = template.content;
 
-  content.querySelectorAll("jui-slot").forEach((slot) => {
-    const index = Number(slot.getAttribute("data-jui-slot"));
+  content.querySelectorAll('jui-slot').forEach((slot) => {
+    const index = Number(slot.getAttribute('data-jui-slot'));
     const parsed = parseTemplateValue(values[index]);
     slot.replaceWith(...(Array.isArray(parsed) ? parsed : [parsed]));
   });
 
-  content.querySelectorAll("*").forEach((node) => {
+  content.querySelectorAll('*').forEach((node) => {
     Array.from(node.attributes).forEach((attr) => {
       if (!attrTokens.has(attr.value)) return;
       const index = attrTokens.get(attr.value);
@@ -2609,7 +2752,9 @@ export function Show(props: {
   return () => {
     const when = access(props.when);
     if (when) {
-      return typeof props.children === "function" ? props.children(when) : props.children;
+      return typeof props.children === 'function'
+        ? props.children(when)
+        : props.children;
     }
     return access(props.fallback);
   };
@@ -2630,15 +2775,15 @@ export function For(props: {
   fallback?: any;
 }): DocumentFragment {
   const fragment = document.createDocumentFragment();
-  const start = document.createComment("for-start");
-  const end = document.createComment("for-end");
+  const start = document.createComment('for-start');
+  const end = document.createComment('for-end');
   fragment.append(start, end);
 
   bindList(
     end,
     () => access(props.each) || [],
     (item, index, itemAccessor) => {
-      if (typeof props.children === "function") {
+      if (typeof props.children === 'function') {
         return props.children(itemAccessor, index);
       }
       return props.children;
@@ -2646,7 +2791,7 @@ export function For(props: {
     {
       key: props.key,
       fallback: props.fallback,
-    },
+    }
   );
 
   return fragment;

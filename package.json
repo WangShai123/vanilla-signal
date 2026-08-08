@@ -1,6 +1,6 @@
 {
   "name": "vanilla-signal",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "private": false,
   "description": "Signal runtime: A simple and efficient vanilla javascript library.",
   "keywords": [
@@ -52,6 +52,7 @@
     "@types/node": "^26.1.2",
     "@typescript/native-preview": "7.0.0-dev.20260509.2",
     "bumpp": "^11.1.0",
+    "jsdom": "^30.0.1",
     "typescript": "^7.0.2",
     "vite-plus": "^0.2.7"
   }
